@@ -1,0 +1,111 @@
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  # Service Frontend Next.js (mode production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: cuisine-frontend-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.votre-domaine.com
+    networks:
+      - cuisine-network-prod
+
+  # Service Backend Node.js/Express (mode production)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: cuisine-backend-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mongodb://mongo:27017/cuisine-app
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=5000
+      - CORS_ORIGIN=https://votre-domaine.com
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_ENDPOINT=minio
+      - STORAGE_PORT=9000
+      - STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY}
+      - STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY}
+      - STORAGE_BUCKET=cuisine-files
+    depends_on:
+      - mongo
+      - redis
+      - minio
+    networks:
+      - cuisine-network-prod
+
+  # Proxy Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: cuisine-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - cuisine-network-prod
+
+  # Service Base de données MongoDB (mode production)
+  mongo:
+    image: mongo:6.0
+    container_name: cuisine-mongo-prod
+    restart: always
+    volumes:
+      - mongo-data-prod:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    networks:
+      - cuisine-network-prod
+
+  # Service Redis pour le cache et les sessions (mode production)
+  redis:
+    image: redis:7.4-alpine
+    container_name: cuisine-redis-prod
+    restart: always
+    volumes:
+      - redis-data-prod:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    networks:
+      - cuisine-network-prod
+
+  # Service MinIO pour le stockage d'objets (documents, photos)
+  minio:
+    image: minio/minio:latest
+    container_name: cuisine-minio-prod
+    restart: always
+    volumes:
+      - minio-data-prod:/data
+    environment:
+      - MINIO_ROOT_USER=${STORAGE_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${STORAGE_SECRET_KEY}
+    command: server /data
+    networks:
+      - cuisine-network-prod
+
+volumes:
+  mongo-data-prod:
+  redis-data-prod:
+  minio-data-prod:
+
+networks:
+  cuisine-network-prod:
+    driver: bridge

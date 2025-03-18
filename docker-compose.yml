@@ -1,0 +1,116 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # Service Frontend Next.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cuisine-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    networks:
+      - cuisine-network
+
+  # Service Backend Node.js/Express
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cuisine-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=mongodb://app_user:app_password@mongo:27017/cuisine-app?authSource=cuisine-app
+      - JWT_SECRET=7a6a1c8757de3daf9e0a154a0d174198a3ef221eb8940d5c6fb3
+      - PORT=5000
+      - CORS_ORIGIN=http://localhost:3000
+      - EMAIL_HOST=smtp.example.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=user@example.com
+      - EMAIL_PASS=password
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - cuisine-network
+
+  # Service Base de données MongoDB
+  mongo:
+    image: mongo:6.0
+    container_name: cuisine-mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpassword
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - cuisine-network
+
+  # Service MongoExpress pour gérer MongoDB (optionnel)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: cuisine-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpassword
+      - ME_CONFIG_MONGODB_URL=mongodb://root:rootpassword@mongo:27017/
+    depends_on:
+      - mongo
+    networks:
+      - cuisine-network
+
+  # Service Redis pour le cache et les sessions
+  redis:
+    image: redis:7.4-alpine
+    container_name: cuisine-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cuisine-network
+
+  # Service MinIO pour le stockage d'objets (documents, photos)
+  minio:
+    image: minio/minio:latest
+    container_name: cuisine-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    networks:
+      - cuisine-network
+
+volumes:
+  mongo-data:
+  redis-data:
+  minio-data:
+
+networks:
+  cuisine-network:
+    driver: bridge

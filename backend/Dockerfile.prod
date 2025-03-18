@@ -1,0 +1,38 @@
+# backend/Dockerfile.prod
+FROM node:18-alpine AS builder
+
+# Création du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers de dépendances
+COPY package.json package-lock.json* tsconfig.json ./
+
+# Installation des dépendances
+RUN npm ci
+
+# Copie du reste du code source
+COPY . .
+
+# Construction du projet TypeScript
+RUN npm run build
+
+# Étape de production avec une image minimale
+FROM node:18-alpine
+
+# Création du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers de dépendances
+COPY package.json package-lock.json* ./
+
+# Installation des dépendances de production uniquement
+RUN npm ci --production
+
+# Copie des fichiers de build depuis l'étape précédente
+COPY --from=builder /app/dist ./dist
+
+# Exposition du port utilisé par l'application
+EXPOSE 5000
+
+# Commande de démarrage en mode production
+CMD ["node", "dist/server.js"]

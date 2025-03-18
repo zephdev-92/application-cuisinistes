@@ -1,0 +1,26 @@
+# Docker
+.dockerignore
+.docker
+
+# Logs
+*.log
+
+# Volumes
+data/mongodb
+
+# Environnements
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+dist/
+
+# Next.js
+.next/
+out/
+
+# Divers
+.DS_Store
+Thumbs.db
