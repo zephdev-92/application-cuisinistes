@@ -86,6 +86,7 @@ export const register = async (req: RegisterRequest, res: Response, next: NextFu
 export const login = async (req: LoginRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
+    console.log('Tentative de connexion pour:', email);
 
     // Valider l'email et le mot de passe
     if (!email || !password) {
@@ -129,7 +130,7 @@ export const login = async (req: LoginRequest, res: Response, next: NextFunction
 
     // Générer un token
     const token = generateToken(user._id.toString());
-
+    console.log('Token généré:', token);
     // Envoyer la réponse
     res.status(200).json({
       success: true,
@@ -145,6 +146,7 @@ export const login = async (req: LoginRequest, res: Response, next: NextFunction
       }
     });
   } catch (error) {
+    console.error('Erreur lors de la connexion:', error);
     next(error);
   }
 };

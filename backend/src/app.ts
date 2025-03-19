@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import authRoutes from './routes/auth.routes';
 import profileRoutes from './routes/profile.routes';
 import clientRoutes from './routes/client.routes';
-
+import testRoutes from './routes/test.routes';
 // Création de l'application Express
 const app = express();
 
@@ -46,5 +46,6 @@ app.use('/uploads', (req, res, next) => {
 }, express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/clients', clientRoutes);
+app.use('/api/test', testRoutes);
 export default app;
 
