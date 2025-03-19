@@ -9,6 +9,7 @@ interface JwtPayload {
 }
 
 // Middleware pour protéger les routes
+// Dans middleware/auth.middleware.ts, ajoutez du logging pour déboguer
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   let token: string | undefined;
 
@@ -19,6 +20,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
   // Vérifier si le token existe
   if (!token) {
+    console.log('Pas de token trouvé dans la requête');
     res.status(401).json({
       success: false,
       error: 'Accès non autorisé. Authentification requise.'
@@ -29,22 +31,16 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   try {
     // Vérifier le token
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
+    console.log('Token décodé avec succès, ID utilisateur:', decoded.id);
 
     // Récupérer l'utilisateur à partir du token
     const user = await User.findById(decoded.id);
 
     if (!user) {
+      console.log('Utilisateur non trouvé avec ID:', decoded.id);
       res.status(404).json({
         success: false,
         error: 'Utilisateur non trouvé'
-      });
-      return;
-    }
-
-    if (!user.active) {
-      res.status(401).json({
-        success: false,
-        error: 'Ce compte a été désactivé'
       });
       return;
     }
@@ -57,6 +53,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     next();
   } catch (error) {
+    console.error('Erreur de validation du token:', error);
     res.status(401).json({
       success: false,
       error: 'Accès non autorisé. Token invalide.'

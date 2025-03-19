@@ -52,25 +52,37 @@ export const getClients = async (req: AuthRequest, res: Response, next: NextFunc
     // Filtres
     const filter = { createdBy: req.user.id };
 
-    const clients = await Client.find(filter)
-      .sort({ lastName: 1, firstName: 1 })
-      .skip(skip)
-      .limit(limit);
+    try {
+      const [clients, total] = await Promise.all([
+        Client.find(filter)
+          .sort({ lastName: 1, firstName: 1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Client.countDocuments(filter)
+      ]);
 
-    const total = await Client.countDocuments(filter);
-
-    res.status(200).json({
-      success: true,
-      count: clients.length,
-      pagination: {
-        total,
-        page,
-        pages: Math.ceil(total / limit)
-      },
-      data: clients
-    });
+      // Même si clients est un tableau vide, nous renvoyons un succès
+      res.status(200).json({
+        success: true,
+        count: clients.length,
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit) || 1 // Assurez-vous qu'il y a au moins 1 page
+        },
+        data: clients
+      });
+    } catch (error) {
+      console.error('Erreur lors de la requête MongoDB:', error);
+      throw error;
+    }
   } catch (error) {
-    next(error);
+    console.error('Erreur dans getClients:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Une erreur est survenue lors de la récupération des clients'
+    });
   }
 };
 

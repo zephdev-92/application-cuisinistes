@@ -17,7 +17,16 @@ app.use(cors({
   origin: 'http://localhost:3000', // URL de votre frontend
   credentials: true
 }));
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Erreur globale:', err.message, err.stack);
 
+  // Envoyer une réponse d'erreur structurée
+  res.status(500).json({
+    success: false,
+    error: 'Une erreur est survenue sur le serveur',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
 // Middleware pour parser le JSON
 app.use(express.json());
 
