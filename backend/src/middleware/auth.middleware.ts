@@ -7,7 +7,7 @@ import { AuthRequest } from '../types/express';
 interface JwtPayload {
   id: string;
 }
-j
+
 // Middleware pour protéger les routes
 // Dans middleware/auth.middleware.ts, ajoutez du logging pour déboguer
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
