@@ -1,0 +1,40 @@
+# frontend/Dockerfile.prod
+FROM node:18-alpine AS builder
+
+# Définition du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers de dépendances
+COPY package.json package-lock.json* ./
+
+# Installation des dépendances
+RUN npm ci
+
+# Copie du reste du code source
+COPY . .
+
+# Construction de l'application Next.js
+RUN npm run build
+
+# Étape de production avec une image minimale
+FROM node:18-alpine
+
+# Définition du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers de dépendances
+COPY package.json package-lock.json* ./
+
+# Installation des dépendances de production uniquement
+RUN npm ci --production
+
+# Copie des fichiers de build depuis l'étape précédente
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./
+
+# Exposition du port utilisé par Next.js
+EXPOSE 3000
+
+# Commande de démarrage en mode production
+CMD ["npm", "start"]
