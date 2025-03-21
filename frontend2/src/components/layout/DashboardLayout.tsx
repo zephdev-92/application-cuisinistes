@@ -9,10 +9,7 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  children,
-  title = 'Dashboard'
-}) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title = 'Dashboard' }) => {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -64,26 +61,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="h-screen flex overflow-hidden bg-gray-100">
+      <div className="flex h-screen overflow-hidden bg-gray-100">
         {/* Sidebar pour mobile */}
         <div
-          className={`${
-            sidebarOpen ? 'block' : 'hidden'
-          } fixed inset-0 flex z-40 md:hidden`}
+          className={`${sidebarOpen ? 'block' : 'hidden'} fixed inset-0 z-40 flex md:hidden`}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            className="bg-opacity-75 fixed inset-0 bg-gray-600"
             aria-hidden="true"
             onClick={() => setSidebarOpen(false)}
           ></div>
 
-          <div className="relative flex-1 flex flex-col max-w-xs w-full pt-5 pb-4 bg-white">
+          <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <button
                 type="button"
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:ring-2 focus:ring-white focus:outline-none focus:ring-inset"
                 onClick={() => setSidebarOpen(false)}
               >
                 <span className="sr-only">Fermer la barre latérale</span>
@@ -91,14 +86,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </button>
             </div>
 
-            <div className="flex-shrink-0 flex items-center px-4">
+            <div className="flex flex-shrink-0 items-center px-4">
               <Link href="/" className="flex items-center">
-                <div className="h-8 w-8 bg-blue-600 rounded-full mr-2"></div>
+                <div className="mr-2 h-8 w-8 rounded-full bg-blue-600"></div>
                 <span className="text-lg font-semibold text-gray-900">Gestion Cuisinistes</span>
               </Link>
             </div>
-            <div className="mt-5 flex-1 h-0 overflow-y-auto">
-              <nav className="px-2 space-y-1">
+            <div className="mt-5 h-0 flex-1 overflow-y-auto">
+              <nav className="space-y-1 px-2">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
@@ -107,14 +102,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       isActive(item.href)
                         ? 'bg-gray-100 text-gray-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center px-2 py-2 text-base font-medium rounded-md`}
+                    } group flex items-center rounded-md px-2 py-2 text-base font-medium`}
                   >
                     <item.icon
                       className={`${
                         isActive(item.href)
                           ? 'text-gray-500'
                           : 'text-gray-400 group-hover:text-gray-500'
-                      } mr-4 flex-shrink-0 h-6 w-6`}
+                      } mr-4 h-6 w-6 flex-shrink-0`}
                       aria-hidden="true"
                     />
                     {item.name}
@@ -124,23 +119,23 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </div>
           </div>
 
-          <div className="flex-shrink-0 w-14" aria-hidden="true">
+          <div className="w-14 flex-shrink-0" aria-hidden="true">
             {/* Élément d'espacement */}
           </div>
         </div>
 
         {/* Sidebar pour desktop */}
         <div className="hidden md:flex md:flex-shrink-0">
-          <div className="flex flex-col w-64">
-            <div className="flex flex-col h-0 flex-1">
-              <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white border-b border-gray-200">
+          <div className="flex w-64 flex-col">
+            <div className="flex h-0 flex-1 flex-col">
+              <div className="flex h-16 flex-shrink-0 items-center border-b border-gray-200 bg-white px-4">
                 <Link href="/" className="flex items-center">
-                  <div className="h-8 w-8 bg-blue-600 rounded-full mr-2"></div>
+                  <div className="mr-2 h-8 w-8 rounded-full bg-blue-600"></div>
                   <span className="text-lg font-semibold text-gray-900">Gestion Cuisinistes</span>
                 </Link>
               </div>
-              <div className="flex-1 flex flex-col overflow-y-auto">
-                <nav className="flex-1 px-2 py-4 bg-white space-y-1">
+              <div className="flex flex-1 flex-col overflow-y-auto">
+                <nav className="flex-1 space-y-1 bg-white px-2 py-4">
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
@@ -149,14 +144,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         isActive(item.href)
                           ? 'bg-gray-100 text-gray-900'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+                      } group flex items-center rounded-md px-2 py-2 text-sm font-medium`}
                     >
                       <item.icon
                         className={`${
                           isActive(item.href)
                             ? 'text-gray-500'
                             : 'text-gray-400 group-hover:text-gray-500'
-                        } mr-3 flex-shrink-0 h-6 w-6`}
+                        } mr-3 h-6 w-6 flex-shrink-0`}
                         aria-hidden="true"
                       />
                       {item.name}
@@ -168,42 +163,40 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col w-0 flex-1 overflow-hidden">
-          <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
+        <div className="flex w-0 flex-1 flex-col overflow-hidden">
+          <div className="relative z-10 flex h-16 flex-shrink-0 bg-white shadow">
             <button
               type="button"
-              className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
+              className="border-r border-gray-200 px-4 text-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset md:hidden"
               onClick={() => setSidebarOpen(true)}
             >
               <span className="sr-only">Ouvrir la barre latérale</span>
               <MenuIcon className="h-6 w-6" />
             </button>
-            <div className="flex-1 px-4 flex justify-between">
-              <div className="flex-1 flex">
-                <div className="w-full flex md:ml-0">
-                  <div className="relative w-full flex items-center">
+            <div className="flex flex-1 justify-between px-4">
+              <div className="flex flex-1">
+                <div className="flex w-full md:ml-0">
+                  <div className="relative flex w-full items-center">
                     <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
                   </div>
                 </div>
               </div>
               <div className="ml-4 flex items-center md:ml-6">
                 {/* Dropdown du profil */}
-                <div className="ml-3 relative">
+                <div className="relative ml-3">
                   <div>
                     <button
                       type="button"
-                      className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="flex max-w-xs items-center rounded-full bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
                       id="user-menu-button"
                       aria-expanded="false"
                       aria-haspopup="true"
                       onClick={() => logout()}
                     >
                       <span className="sr-only">Ouvrir le menu utilisateur</span>
-                      <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
                         <span className="text-xs font-medium text-gray-700">
-                          {user
-                            ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
-                            : '?'}
+                          {user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}` : '?'}
                         </span>
                       </div>
                       <span className="ml-2 text-gray-700">
@@ -217,9 +210,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </div>
           </div>
 
-          <main className="flex-1 relative overflow-y-auto focus:outline-none">
-            {children}
-          </main>
+          <main className="relative flex-1 overflow-y-auto focus:outline-none">{children}</main>
         </div>
       </div>
     </>
@@ -489,12 +480,7 @@ function XIcon(props: React.SVGProps<SVGSVGElement>) {
       stroke="currentColor"
       {...props}
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M6 18L18 6M6 6l12 12"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
 }

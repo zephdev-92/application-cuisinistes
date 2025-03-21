@@ -1,243 +1,146 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/router';
-import Cookies from 'js-cookie';
-import { apiClient } from '../lib/apiClient';
+import { authService } from '../services/authService';
 import { AxiosError } from 'axios';
+import { User, RegisterData, UserRole } from '../types/user';
 
 interface ApiErrorResponse {
+  success: boolean;
   error?: string;
   errors?: Array<{ msg: string }>;
 }
 
-// Types d'utilisateur
-export enum UserRole {
-  CUISINISTE = 'cuisiniste',
-  PRESTATAIRE = 'prestataire',
-  ADMIN = 'admin',
-}
-
-export interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: UserRole;
-  phone?: string;
-  companyName?: string; // Ajout
-  companyLogo?: string; // Ajout
-  description?: string; // Ajout
-  address?: {
-    // Ajout
-    street?: string;
-    city?: string;
-    postalCode?: string;
-    country?: string;
-  };
-  specialties?: string[]; // Ajout
-  profileCompleted: boolean;
-}
-
-// Types pour l'inscription et la connexion
-export interface RegisterData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  role?: UserRole;
-  phone?: string;
-  confirmPassword?: string;
-  terms?: boolean;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-// Interface du context d'authentification
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  error: string | null;
   isAuthenticated: boolean;
-  register: (data: RegisterData) => Promise<void>;
-  login: (data: LoginData) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  clearError: () => void;
+  register: (userData: RegisterData) => Promise<void>;
   setUser: (user: User | null) => void;
 }
 
-// Création du context
-export const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: false,
-  error: null,
-  isAuthenticated: false,
-  register: async () => {},
-  login: async () => {},
-  logout: async () => {},
-  clearError: () => {},
-  setUser: () => {},
-});
+// Créer le contexte avec une valeur par défaut
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Props du provider
+// Hook personnalisé pour utiliser le contexte d'authentification
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+// Props pour le provider
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Provider du context d'authentification
+// Créer le provider du contexte
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
   const router = useRouter();
 
-  // Vérifier si l'utilisateur est déjà connecté (au chargement initial)
+  // Vérifier l'état d'authentification au chargement
   useEffect(() => {
-    const loadUser = async () => {
+    const checkAuth = async () => {
       try {
-        const token = Cookies.get('token');
-        if (!token) {
-          setLoading(false);
+        // Vérifier si nous sommes dans un environnement navigateur
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
           return;
         }
 
-        const response = await apiClient.get('/auth/me');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Récupérer les infos de l'utilisateur
+        const response = await authService.getProfile();
         setUser(response.data.data);
-        setIsAuthenticated(true);
-      } catch {
-        Cookies.remove('token');
-        setUser(null);
-        setIsAuthenticated(false);
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'authentification:", error);
+        localStorage.removeItem('token');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    loadUser();
+    checkAuth();
   }, []);
 
-  // Fonction d'inscription
-  const register = async (data: RegisterData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log("Données d'inscription:", data);
-      const response = await apiClient.post('/auth/register', data);
-      console.log("Réponse d'inscription:", response.data);
-      // Sauvegarder le token dans un cookie
-      Cookies.set('token', response.data.token, { expires: 7 });
-
-      // Mettre à jour l'état du contexte
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-
-      // Rediriger vers le tableau de bord
-      router.push('/dashboard');
-    } catch (error: unknown) {
-      console.error("Erreur d'inscription:", error);
-      //console.log("Réponse d'erreur:", error.response?.data);
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      const errorMessage =
-        axiosError.response?.data?.error ||
-        axiosError.response?.data?.errors?.[0]?.msg ||
-        "Une erreur est survenue lors de l'inscription";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Fonction de connexion
-  const login = async (data: LoginData) => {
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
+      const response = await authService.login(email, password);
+      setUser(response.user);
 
-      const response = await apiClient.post('/auth/login', data);
-
-      // Sauvegarder le token dans un cookie
-      Cookies.set('token', response.data.token, { expires: 7 });
-
-      // Mettre à jour l'état du contexte
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-
-      // Rediriger vers le tableau de bord
-      router.push('/dashboard');
+      // Redirection après connexion
+      const redirectPath = localStorage.getItem('redirectAfterLogin') || '/dashboard';
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirectPath);
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
-      const errorMessage =
-        axiosError.response?.data?.error ||
-        axiosError.response?.data?.errors?.[0]?.msg ||
-        'Identifiants invalides';
-      setError(errorMessage);
+      setError(axiosError.response?.data?.error || 'Une erreur est survenue lors de la connexion');
+      throw error;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   // Fonction de déconnexion
   const logout = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
-
-      // Appeler l'API de déconnexion (bien que ce soit principalement côté client)
-      await apiClient.post('/auth/logout');
-
-      // Supprimer le token du cookie
-      Cookies.remove('token');
-
-      // Réinitialiser l'état
+      await authService.logout();
       setUser(null);
-      setIsAuthenticated(false);
-
-      // Rediriger vers la page d'accueil
-      router.push('/');
-    } catch {
-      // Même en cas d'erreur, on déconnecte l'utilisateur localement
-      Cookies.remove('token');
-      setUser(null);
-      setIsAuthenticated(false);
-      router.push('/');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Fonction pour effacer les erreurs
-  const clearError = () => {
+  // Fonction d'inscription (ajustez selon vos besoins)
+  const register = async (userData: RegisterData) => {
+    setIsLoading(true);
     setError(null);
+    try {
+      const response = await authService.register(userData);
+      setUser(response.user);
+      router.push('/dashboard');
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      setError(axiosError.response?.data?.error || "Une erreur est survenue lors de l'inscription");
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        error,
-        isAuthenticated,
-        register,
-        login,
-        logout,
-        clearError,
-        setUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    error,
+    login,
+    logout,
+    register,
+    setUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook personnalisé pour utiliser le context d'authentification
-export const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error(
-      "useAuth doit être utilisé à l'intérieur d'un AuthProvider"
-    );
-  }
-  return context;
-};
+export default AuthProvider;
+
+export { UserRole };

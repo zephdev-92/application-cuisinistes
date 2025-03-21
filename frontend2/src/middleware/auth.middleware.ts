@@ -21,12 +21,12 @@ export function middleware(request: NextRequest) {
   const authRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password'];
 
   // Vérifier si l'URL actuelle est une route protégée
-  const isProtectedRoute = protectedRoutes.some(route =>
-    pathname === route || pathname.startsWith(`${route}/`)
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
   // Vérifier si l'URL actuelle est une route d'authentification
-  const isAuthRoute = authRoutes.some(route => pathname === route);
+  const isAuthRoute = authRoutes.some((route) => pathname === route);
 
   // Si l'utilisateur n'est pas connecté et tente d'accéder à une route protégée
   if (!token && isProtectedRoute) {

@@ -37,8 +37,9 @@ apiClient.interceptors.response.use(
         Cookies.remove('token');
 
         // Rediriger vers la page de connexion si l'erreur n'est pas déjà venue d'une tentative de connexion
-        const isAuthRoute = window.location.pathname.includes('/auth/login') ||
-                            window.location.pathname.includes('/auth/register');
+        const isAuthRoute =
+          window.location.pathname.includes('/auth/login') ||
+          window.location.pathname.includes('/auth/register');
 
         if (!isAuthRoute) {
           window.location.href = '/auth/login?session=expired';

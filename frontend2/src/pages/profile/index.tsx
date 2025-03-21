@@ -8,6 +8,7 @@ import { UserRole, useAuth } from '@/contexts/auth.context';
 import { useProfile } from '@/hooks/useProfile';
 import Image from 'next/image';
 import { NextPage } from 'next';
+import { apiClient } from '@/lib/apiClient';
 
 // Schéma de validation pour le formulaire de profil
 const profileSchema = yup.object().shape({
@@ -64,21 +65,28 @@ type PageWithLayout = NextPage<Record<string, unknown>> & {
 
 const ProfilePage: PageWithLayout = () => {
   const { user } = useAuth();
-  const { loading, error, updateProfile, updatePassword, fetchProfile, profileLoaded } = useProfile();
+  const { loading, error, updateProfile, updatePassword, fetchProfile, profileLoaded } =
+    useProfile();
   const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [logoPreview, setLogoPreview] = useState<string | null>(user?.companyLogo || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user?.companyLogo) {
-      if (user.companyLogo.startsWith('http')) {
-        setLogoPreview(user.companyLogo);
-      } else if (user.companyLogo.startsWith('/')) {
-        setLogoPreview(`http://localhost:5000${user.companyLogo}`);
+    const fetchUserProfile = async () => {
+      try {
+        const response = await apiClient.get('/profile');
+        if (response.data.data.companyLogo) {
+          // Définir le logo comme URL complète
+          setLogoPreview(`http://localhost:5000${response.data.data.companyLogo}`);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération du profil:', error);
       }
-    }
-  }, [user]);
+    };
+
+    fetchUserProfile();
+  }, []);
 
   // Configuration du formulaire de profil
   const {
@@ -105,39 +113,39 @@ const ProfilePage: PageWithLayout = () => {
 
   // Charger les données au montage du composant
   useEffect(() => {
-     if (!profileLoaded) {
-    const loadProfile = async () => {
-      try {
-        const profileData = await fetchProfile();
+    if (!profileLoaded) {
+      const loadProfile = async () => {
+        try {
+          const profileData = await fetchProfile();
 
-        // Mettre à jour les valeurs du formulaire
-        if (profileData) {
-          resetProfile({
-            firstName: profileData.firstName || '',
-            lastName: profileData.lastName || '',
-            email: profileData.email || '',
-            phone: profileData.phone || '',
-            companyName: profileData.companyName || '',
-            description: profileData.description || '',
-            street: profileData.address?.street || '',
-            city: profileData.address?.city || '',
-            postalCode: profileData.address?.postalCode || '',
-            country: profileData.address?.country || 'France',
-            specialties: profileData.specialties || []
-          });
+          // Mettre à jour les valeurs du formulaire
+          if (profileData) {
+            resetProfile({
+              firstName: profileData.firstName || '',
+              lastName: profileData.lastName || '',
+              email: profileData.email || '',
+              phone: profileData.phone || '',
+              companyName: profileData.companyName || '',
+              description: profileData.description || '',
+              street: profileData.address?.street || '',
+              city: profileData.address?.city || '',
+              postalCode: profileData.address?.postalCode || '',
+              country: profileData.address?.country || 'France',
+              specialties: profileData.specialties || [],
+            });
 
-          // Mettre à jour la prévisualisation du logo
-          if (profileData.companyLogo) {
-            setLogoPreview(`http://localhost:5000${profileData.companyLogo}`);
+            // Mettre à jour la prévisualisation du logo
+            if (profileData.companyLogo) {
+              setLogoPreview(`http://localhost:5000${profileData.companyLogo}`);
+            }
           }
+        } catch (error) {
+          console.error('Erreur lors du chargement du profil:', error);
         }
-      } catch (error) {
-        console.error("Erreur lors du chargement du profil:", error);
-      }
-    };
+      };
 
-    loadProfile();
-  }
+      loadProfile();
+    }
   }, [fetchProfile, profileLoaded, resetProfile]);
 
   // Configuration du formulaire de mot de passe
@@ -173,8 +181,7 @@ const ProfilePage: PageWithLayout = () => {
       // Sinon (pour les prestataires), s'assurer que c'est un tableau valide
       else if (dataToSend.specialties) {
         const selectedSpecialties =
-          dataToSend.specialties.filter((s): s is string => s !== undefined) ||
-          [];
+          dataToSend.specialties.filter((s): s is string => s !== undefined) || [];
         dataToSend.specialties = selectedSpecialties;
       }
 
@@ -238,30 +245,21 @@ const ProfilePage: PageWithLayout = () => {
   };
   return (
     <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-semibold text-gray-900">Mon Profil</h1>
 
-        {error && (
-          <Alert type="error" title="Erreur" message={error} className="mt-4" />
-        )}
+        {error && <Alert type="error" title="Erreur" message={error} className="mt-4" />}
 
-        {success && (
-          <Alert
-            type="success"
-            title="Succès"
-            message={success}
-            className="mt-4"
-          />
-        )}
+        {success && <Alert type="success" title="Succès" message={success} className="mt-4" />}
 
         <div className="mt-6">
           <div className="sm:hidden">
             <select
               id="tabs"
               name="tabs"
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              className="block w-full rounded-md border-gray-300 py-2 pr-10 pl-3 text-base focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
               value={activeTab}
-              onChange={e => setActiveTab(e.target.value)}
+              onChange={(e) => setActiveTab(e.target.value)}
             >
               <option value="profile">Informations personnelles</option>
               <option value="password">Mot de passe</option>
@@ -276,8 +274,8 @@ const ProfilePage: PageWithLayout = () => {
                   className={`${
                     activeTab === 'profile'
                       ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  } border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap`}
                 >
                   Informations personnelles
                 </button>
@@ -286,8 +284,8 @@ const ProfilePage: PageWithLayout = () => {
                   className={`${
                     activeTab === 'password'
                       ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  } border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap`}
                 >
                   Mot de passe
                 </button>
@@ -296,20 +294,19 @@ const ProfilePage: PageWithLayout = () => {
           </div>
 
           {activeTab === 'profile' && (
-            <div className="mt-6 bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+            <div className="mt-6 bg-white px-4 py-5 shadow sm:rounded-lg sm:p-6">
               <form onSubmit={handleProfileSubmit(onProfileSubmit)}>
                 <div className="md:grid md:grid-cols-3 md:gap-6">
                   <div className="md:col-span-1">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
                       Informations personnelles
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Ces informations sont utilisées pour vous identifier sur
-                      la plateforme.
+                      Ces informations sont utilisées pour vous identifier sur la plateforme.
                     </p>
                   </div>
 
-                  <div className="mt-5 md:mt-0 md:col-span-2">
+                  <div className="mt-5 md:col-span-2 md:mt-0">
                     <div className="grid grid-cols-6 gap-6">
                       <div className="col-span-6 sm:col-span-3">
                         <label
@@ -323,10 +320,8 @@ const ProfilePage: PageWithLayout = () => {
                           id="firstName"
                           {...registerProfile('firstName')}
                           className={`mt-1 block w-full border ${
-                            profileErrors.firstName
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            profileErrors.firstName ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {profileErrors.firstName && (
                           <p className="mt-2 text-sm text-red-600">
@@ -347,10 +342,8 @@ const ProfilePage: PageWithLayout = () => {
                           id="lastName"
                           {...registerProfile('lastName')}
                           className={`mt-1 block w-full border ${
-                            profileErrors.lastName
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            profileErrors.lastName ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {profileErrors.lastName && (
                           <p className="mt-2 text-sm text-red-600">
@@ -360,10 +353,7 @@ const ProfilePage: PageWithLayout = () => {
                       </div>
 
                       <div className="col-span-6 sm:col-span-4">
-                        <label
-                          htmlFor="email"
-                          className="block text-sm font-medium text-gray-700"
-                        >
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                           Email
                         </label>
                         <input
@@ -371,23 +361,16 @@ const ProfilePage: PageWithLayout = () => {
                           id="email"
                           {...registerProfile('email')}
                           className={`mt-1 block w-full border ${
-                            profileErrors.email
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            profileErrors.email ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {profileErrors.email && (
-                          <p className="mt-2 text-sm text-red-600">
-                            {profileErrors.email.message}
-                          </p>
+                          <p className="mt-2 text-sm text-red-600">{profileErrors.email.message}</p>
                         )}
                       </div>
 
                       <div className="col-span-6 sm:col-span-4">
-                        <label
-                          htmlFor="phone"
-                          className="block text-sm font-medium text-gray-700"
-                        >
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                           Téléphone
                         </label>
                         <input
@@ -395,15 +378,11 @@ const ProfilePage: PageWithLayout = () => {
                           id="phone"
                           {...registerProfile('phone')}
                           className={`mt-1 block w-full border ${
-                            profileErrors.phone
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            profileErrors.phone ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {profileErrors.phone && (
-                          <p className="mt-2 text-sm text-red-600">
-                            {profileErrors.phone.message}
-                          </p>
+                          <p className="mt-2 text-sm text-red-600">{profileErrors.phone.message}</p>
                         )}
                       </div>
                     </div>
@@ -412,7 +391,7 @@ const ProfilePage: PageWithLayout = () => {
 
                 <div className="mt-10 md:grid md:grid-cols-3 md:gap-6">
                   <div className="md:col-span-1">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
                       Informations entreprise
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
@@ -420,7 +399,7 @@ const ProfilePage: PageWithLayout = () => {
                     </p>
                   </div>
 
-                  <div className="mt-5 md:mt-0 md:col-span-2">
+                  <div className="mt-5 md:col-span-2 md:mt-0">
                     <div className="grid grid-cols-6 gap-6">
                       <div className="col-span-6">
                         <label
@@ -433,7 +412,7 @@ const ProfilePage: PageWithLayout = () => {
                           type="text"
                           id="companyName"
                           {...registerProfile('companyName')}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                         />
                       </div>
 
@@ -442,17 +421,17 @@ const ProfilePage: PageWithLayout = () => {
                           Logo de l&apos;entreprise
                         </label>
                         <div className="mt-1 flex items-center">
-                          <div className="inline-block h-24 w-24 rounded-md overflow-hidden bg-gray-100">
-                          {logoPreview && isValidUrl(logoPreview) ? (
-  <Image
-    src={logoPreview}
-    alt="Logo preview"
-    width={96}
-    height={96}
-    className="h-24 w-24 object-cover"
-    unoptimized={true}
-    crossOrigin="anonymous"
-  />
+                          <div className="inline-block h-24 w-24 overflow-hidden rounded-md bg-gray-100">
+                            {logoPreview && isValidUrl(logoPreview) ? (
+                              <Image
+                                src={logoPreview}
+                                alt="Logo preview"
+                                width={96}
+                                height={96}
+                                className="h-24 w-24 object-cover"
+                                unoptimized={true}
+                                crossOrigin="anonymous"
+                              />
                             ) : (
                               <svg
                                 className="h-full w-full text-gray-300"
@@ -473,14 +452,12 @@ const ProfilePage: PageWithLayout = () => {
                           <button
                             type="button"
                             onClick={triggerFileInput}
-                            className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="ml-5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-4 font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
                           >
                             Changer
                           </button>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                          JPG, PNG, GIF jusqu&apos;à 5MB
-                        </p>
+                        <p className="mt-2 text-sm text-gray-500">JPG, PNG, GIF jusqu&apos;à 5MB</p>
                       </div>
 
                       <div className="col-span-6">
@@ -494,11 +471,10 @@ const ProfilePage: PageWithLayout = () => {
                           id="description"
                           rows={3}
                           {...registerProfile('description')}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                         />
                         <p className="mt-2 text-sm text-gray-500">
-                          Brève description de votre entreprise ou de vos
-                          services
+                          Brève description de votre entreprise ou de vos services
                         </p>
                       </div>
 
@@ -511,28 +487,21 @@ const ProfilePage: PageWithLayout = () => {
                             Spécialités
                           </label>
                           <div className="mt-1 flex flex-wrap gap-2">
-                            {[
-                              'pose',
-                              'livraison',
-                              'mesure',
-                              'plomberie',
-                              'électricité',
-                            ].map(specialty => (
-                              <label
-                                key={specialty}
-                                className="inline-flex items-center"
-                              >
-                                <input
-                                  type="checkbox"
-                                  value={specialty}
-                                  {...registerProfile('specialties')}
-                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <span className="ml-2 text-sm text-gray-700 capitalize">
-                                  {specialty}
-                                </span>
-                              </label>
-                            ))}
+                            {['pose', 'livraison', 'mesure', 'plomberie', 'électricité'].map(
+                              (specialty) => (
+                                <label key={specialty} className="inline-flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    value={specialty}
+                                    {...registerProfile('specialties')}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-700 capitalize">
+                                    {specialty}
+                                  </span>
+                                </label>
+                              )
+                            )}
                           </div>
                         </div>
                       )}
@@ -542,43 +511,35 @@ const ProfilePage: PageWithLayout = () => {
 
                 <div className="mt-10 md:grid md:grid-cols-3 md:gap-6">
                   <div className="md:col-span-1">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">
-                      Adresse
-                    </h3>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Adresse</h3>
                     <p className="mt-1 text-sm text-gray-500">
                       Adresse de votre entreprise ou de votre domicile
                     </p>
                   </div>
 
-                  <div className="mt-5 md:mt-0 md:col-span-2">
+                  <div className="mt-5 md:col-span-2 md:mt-0">
                     <div className="grid grid-cols-6 gap-6">
                       <div className="col-span-6">
-                        <label
-                          htmlFor="street"
-                          className="block text-sm font-medium text-gray-700"
-                        >
+                        <label htmlFor="street" className="block text-sm font-medium text-gray-700">
                           Rue
                         </label>
                         <input
                           type="text"
                           id="street"
                           {...registerProfile('street')}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                         />
                       </div>
 
                       <div className="col-span-6 sm:col-span-6 lg:col-span-2">
-                        <label
-                          htmlFor="city"
-                          className="block text-sm font-medium text-gray-700"
-                        >
+                        <label htmlFor="city" className="block text-sm font-medium text-gray-700">
                           Ville
                         </label>
                         <input
                           type="text"
                           id="city"
                           {...registerProfile('city')}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                         />
                       </div>
 
@@ -593,7 +554,7 @@ const ProfilePage: PageWithLayout = () => {
                           type="text"
                           id="postalCode"
                           {...registerProfile('postalCode')}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                         />
                       </div>
 
@@ -607,7 +568,7 @@ const ProfilePage: PageWithLayout = () => {
                         <select
                           id="country"
                           {...registerProfile('country')}
-                          className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                         >
                           <option value="France">France</option>
                           <option value="Belgique">Belgique</option>
@@ -623,7 +584,7 @@ const ProfilePage: PageWithLayout = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
                   >
                     {loading ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
@@ -633,20 +594,18 @@ const ProfilePage: PageWithLayout = () => {
           )}
 
           {activeTab === 'password' && (
-            <div className="mt-6 bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+            <div className="mt-6 bg-white px-4 py-5 shadow sm:rounded-lg sm:p-6">
               <form onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
                 <div className="md:grid md:grid-cols-3 md:gap-6">
                   <div className="md:col-span-1">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">
-                      Mot de passe
-                    </h3>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Mot de passe</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Modifiez votre mot de passe. Nous vous recommandons
-                      d&apos;utiliser un mot de passe fort et unique.
+                      Modifiez votre mot de passe. Nous vous recommandons d&apos;utiliser un mot de
+                      passe fort et unique.
                     </p>
                   </div>
 
-                  <div className="mt-5 md:mt-0 md:col-span-2">
+                  <div className="mt-5 md:col-span-2 md:mt-0">
                     <div className="grid grid-cols-6 gap-6">
                       <div className="col-span-6 sm:col-span-4">
                         <label
@@ -660,10 +619,8 @@ const ProfilePage: PageWithLayout = () => {
                           id="currentPassword"
                           {...registerPassword('currentPassword')}
                           className={`mt-1 block w-full border ${
-                            passwordErrors.currentPassword
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            passwordErrors.currentPassword ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {passwordErrors.currentPassword && (
                           <p className="mt-2 text-sm text-red-600">
@@ -684,10 +641,8 @@ const ProfilePage: PageWithLayout = () => {
                           id="newPassword"
                           {...registerPassword('newPassword')}
                           className={`mt-1 block w-full border ${
-                            passwordErrors.newPassword
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            passwordErrors.newPassword ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {passwordErrors.newPassword && (
                           <p className="mt-2 text-sm text-red-600">
@@ -708,10 +663,8 @@ const ProfilePage: PageWithLayout = () => {
                           id="confirmPassword"
                           {...registerPassword('confirmPassword')}
                           className={`mt-1 block w-full border ${
-                            passwordErrors.confirmPassword
-                              ? 'border-red-300'
-                              : 'border-gray-300'
-                          } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                            passwordErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                          } rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                         />
                         {passwordErrors.confirmPassword && (
                           <p className="mt-2 text-sm text-red-600">
@@ -727,11 +680,9 @@ const ProfilePage: PageWithLayout = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
                   >
-                    {loading
-                      ? 'Mise à jour...'
-                      : 'Mettre à jour le mot de passe'}
+                    {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
                   </button>
                 </div>
               </form>

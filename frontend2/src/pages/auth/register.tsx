@@ -10,8 +10,8 @@ import { Alert } from '@/components/ui/Alert';
 
 // Schéma de validation du formulaire
 const loginSchema = yup.object().shape({
-  email: yup.string().required('L\'email est requis').email('Email invalide'),
-  password: yup.string().required('Le mot de passe est requis')
+  email: yup.string().required("L'email est requis").email('Email invalide'),
+  password: yup.string().required('Le mot de passe est requis'),
 });
 
 const LoginPage: React.FC = () => {
@@ -27,12 +27,16 @@ const LoginPage: React.FC = () => {
   }, [isAuthenticated, router]);
 
   // Configuration du formulaire avec React Hook Form et Yup
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginData>({
     resolver: yupResolver(loginSchema),
     defaultValues: {
       email: '',
-      password: ''
-    }
+      password: '',
+    },
   });
 
   // Soumission du formulaire
@@ -46,7 +50,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Connexion à votre compte
@@ -60,7 +64,7 @@ const LoginPage: React.FC = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
           {error && (
             <Alert
               type="error"
@@ -91,15 +95,13 @@ const LoginPage: React.FC = () => {
                   id="email"
                   type="email"
                   autoComplete="email"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`block w-full appearance-none border px-3 py-2 ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                   {...register('email')}
                 />
               </div>
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
             {/* Mot de passe */}
@@ -112,9 +114,9 @@ const LoginPage: React.FC = () => {
                   id="password"
                   type="password"
                   autoComplete="current-password"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`block w-full appearance-none border px-3 py-2 ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                   {...register('password')}
                 />
               </div>
@@ -130,7 +132,7 @@ const LoginPage: React.FC = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                   Se souvenir de moi
@@ -138,7 +140,10 @@ const LoginPage: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <Link href="/auth/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link
+                  href="/auth/forgot-password"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Mot de passe oublié ?
                 </Link>
               </div>
@@ -149,7 +154,7 @@ const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
               >
                 {loading ? 'Connexion en cours...' : 'Se connecter'}
               </button>

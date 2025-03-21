@@ -1,8 +1,11 @@
 import React from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
 import { useAuth, UserRole } from '@/contexts/auth.context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Link from 'next/link';
+
+type NextPageWithLayout<P = object> = React.FC<P> & {
+  getLayout?: (page: React.ReactElement) => React.ReactNode;
+};
 
 // Composant de carte pour le tableau de bord
 interface DashboardCardProps {
@@ -15,15 +18,13 @@ interface DashboardCardProps {
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, icon, link, count }) => (
   <Link href={link} className="block">
-    <div className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-200">
+    <div className="overflow-hidden rounded-lg bg-white shadow transition-shadow duration-200 hover:shadow-md">
       <div className="p-5">
         <div className="flex items-center">
-          <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-            {icon}
-          </div>
+          <div className="flex-shrink-0 rounded-md bg-blue-500 p-3">{icon}</div>
           <div className="ml-5 w-0 flex-1">
             <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
+              <dt className="truncate text-sm font-medium text-gray-500">{title}</dt>
               <dd>
                 <div className="text-lg font-medium text-gray-900">
                   {count !== undefined ? count : description}
@@ -44,13 +45,12 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, icon,
   </Link>
 );
 
-const DashboardPage: React.FC = () => {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+const DashboardPage: NextPageWithLayout = () => {
+  const { user, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex h-screen items-center justify-center">
         <div className="loader">Chargement...</div>
       </div>
     );
@@ -58,12 +58,12 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+      <div className="pe.g mx-auto max-w-7xl sm:px-6 md:px-8">
         <h1 className="text-2xl font-semibold text-gray-900">Tableau de bord</h1>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
         <div className="py-4">
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+          <div className="mb-6 overflow-hidden bg-white shadow sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6">
               <h2 className="text-lg leading-6 font-medium text-gray-900">
                 Bienvenue, {user?.firstName} {user?.lastName}
@@ -82,8 +82,18 @@ const DashboardPage: React.FC = () => {
                   title="Clients"
                   description="Gérer vos clients"
                   icon={
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      />
                     </svg>
                   }
                   link="/clients"
@@ -94,8 +104,18 @@ const DashboardPage: React.FC = () => {
                   title="Projets"
                   description="Gérer vos projets"
                   icon={
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
                     </svg>
                   }
                   link="/projects"
@@ -106,8 +126,18 @@ const DashboardPage: React.FC = () => {
                   title="Prestataires"
                   description="Gérer vos prestataires"
                   icon={
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
                     </svg>
                   }
                   link="/prestataires"
@@ -122,8 +152,18 @@ const DashboardPage: React.FC = () => {
                   title="Prestations"
                   description="Voir vos prestations"
                   icon={
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
                     </svg>
                   }
                   link="/appointments"
@@ -134,8 +174,18 @@ const DashboardPage: React.FC = () => {
                   title="Disponibilités"
                   description="Gérer vos disponibilités"
                   icon={
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
                     </svg>
                   }
                   link="/availability"
@@ -146,8 +196,18 @@ const DashboardPage: React.FC = () => {
                   title="Magasins"
                   description="Vos magasins partenaires"
                   icon={
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
                     </svg>
                   }
                   link="/showrooms"
@@ -161,8 +221,18 @@ const DashboardPage: React.FC = () => {
               title="Calendrier"
               description="Voir votre agenda"
               icon={
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
               }
               link="/calendar"
@@ -172,8 +242,18 @@ const DashboardPage: React.FC = () => {
               title="Profil"
               description="Gérer votre profil"
               icon={
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
                 </svg>
               }
               link="/profile"

@@ -1,38 +1,130 @@
-// Mise à jour dans useClients.ts, dans la fonction getClients
+import { useState } from 'react';
+import { useAuth } from '@/contexts/auth.context';
+import { apiClient } from '@/lib/apiClient';
+import { AxiosError } from 'axios';
 
-// Obtenir tous les clients
-const getClients = async (page = 1, limit = 10) => {
+interface ApiErrorResponse {
+  success: boolean;
+  error?: string;
+  errors?: Array<{ msg: string }>;
+}
+
+interface ProfileFormData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  companyName?: string;
+  description?: string;
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  specialties?: string[];
+  companyLogo?: File | null;
+}
+
+interface PasswordFormData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export const useProfile = () => {
+  const { user, setUser } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await apiClient.get('/profile');
+      if (setUser) {
+        setUser(response.data.data);
+      }
+      setProfileLoaded(true);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      throw error;
+    }
+  };
+
+  // Mettre à jour le profil
+  const updateProfile = async (data: ProfileFormData) => {
     setLoading(true);
     setError(null);
 
     try {
-      console.log(`Tentative de récupération des clients: ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/clients?page=${page}&limit=${limit}`);
+      // Créer un FormData pour envoyer le fichier
+      const formData = new FormData();
 
-      const response = await apiClient.get(`/clients?page=${page}&limit=${limit}`);
-      console.log('Réponse reçue:', response.data);
+      // Ajouter les champs au FormData
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === 'companyLogo' && value instanceof File) {
+          formData.append(key, value);
+        } else if (key === 'specialties' && Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
 
-      setClients(response.data.data);
-      setPagination(response.data.pagination);
-      return response.data;
-    } catch (err: unknown) {
-      console.error('Erreur complète:', err);
+      const response = await apiClient.put('/profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-      const error = err as AxiosError<ApiErrorResponse>;
-
-      // Gestion des erreurs réseau
-      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        const errorMessage = 'Erreur de connexion au serveur. Veuillez vérifier que le backend est bien démarré.';
-        setError(errorMessage);
-        throw new Error(errorMessage);
+      // Mettre à jour l'utilisateur dans le contexte
+      if (setUser) {
+        setUser(response.data.data);
       }
 
-      // Gestion des autres erreurs
-      const errorMessage = error.response?.data?.error ||
-                          error.response?.data?.errors?.[0]?.msg ||
-                          `Erreur: ${error.message || 'Une erreur est survenue lors de la récupération des clients'}`;
+      return response.data.data;
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.errors?.[0]?.msg ||
+        'Une erreur est survenue lors de la mise à jour du profil';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  // Mettre à jour le mot de passe
+  const updatePassword = async (data: PasswordFormData) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { currentPassword, newPassword } = data;
+      const response = await apiClient.put('/profile/password', { currentPassword, newPassword });
+
+      return response.data;
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.errors?.[0]?.msg ||
+        'Une erreur est survenue lors de la mise à jour du mot de passe';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    user,
+    loading,
+    error,
+    updateProfile,
+    updatePassword,
+    fetchProfile,
+    profileLoaded,
+  };
+};

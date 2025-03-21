@@ -1,0 +1,220 @@
+# .github/workflows/cd.yml
+name: CD - Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main, develop]
+    types:
+      - completed
+  workflow_dispatch:  # Permet de lancer manuellement le workflow
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+      
+      - name: Setup Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.STAGING_SERVER_IP }} >> ~/.ssh/known_hosts
+      
+      - name: Copy Docker Compose files
+        run: |
+          scp docker-compose.prod.yml ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SERVER_IP }}:~/cuisine-app/
+          scp .env.staging ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SERVER_IP }}:~/cuisine-app/.env
+      
+      - name: Deploy to Staging
+        run: |
+          ssh ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SERVER_IP }} "cd ~/cuisine-app && \
+          docker-compose -f docker-compose.prod.yml pull && \
+          docker-compose -f docker-compose.prod.yml up -d && \
+          docker system prune -af"
+
+  deploy-production:
+    name: Deploy to Production
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production  # Environment protection rules can be set in GitHub
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+      
+      - name: Setup Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER_IP }} >> ~/.ssh/known_hosts
+      
+      - name: Copy Docker Compose files
+        run: |
+          scp docker-compose.prod.yml ${{ secrets.PRODUCTION_SSH_USER }}@${{ secrets.PRODUCTION_SERVER_IP }}:~/cuisine-app/
+          scp .env.production ${{ secrets.PRODUCTION_SSH_USER }}@${{ secrets.PRODUCTION_SERVER_IP }}:~/cuisine-app/.env
+      
+      - name: Deploy to Production
+        run: |
+          ssh ${{ secrets.PRODUCTION_SSH_USER }}@${{ secrets.PRODUCTION_SERVER_IP }} "cd ~/cuisine-app && \
+          docker-compose -f docker-compose.prod.yml pull && \
+          docker-compose -f docker-compose.prod.yml up -d && \
+          docker system prune -af"
+
+  notify:
+    name: Notify on Slack
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify Staging Deployment
+        if: ${{ needs.deploy-staging.result == 'success' }}
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": ":rocket: *Cuisine App* a été déployée avec succès sur l'environnement de staging.",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rocket: *Cuisine App* a été déployée avec succès sur l'environnement de staging."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\ndevelop"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Voir l'application"
+                      },
+                      "url": "https://staging.example.com"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Notify Production Deployment
+        if: ${{ needs.deploy-production.result == 'success' }}
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": ":tada: *Cuisine App* a été déployée avec succès en production!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":tada: *Cuisine App* a été déployée avec succès en production!"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\nmain"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Voir l'application"
+                      },
+                      "url": "https://example.com"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Notify Deployment Failure
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": ":x: Échec du déploiement de *Cuisine App*",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: Échec du déploiement de *Cuisine App*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Voir les logs"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

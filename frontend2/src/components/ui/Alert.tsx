@@ -8,13 +8,7 @@ interface AlertProps {
   className?: string;
 }
 
-export const Alert: React.FC<AlertProps> = ({
-  type,
-  title,
-  message,
-  onClose,
-  className = '',
-}) => {
+export const Alert: React.FC<AlertProps> = ({ type, title, message, onClose, className = '' }) => {
   const bgColors = {
     info: 'bg-blue-50',
     success: 'bg-green-50',
@@ -92,9 +86,7 @@ export const Alert: React.FC<AlertProps> = ({
           <div className={`h-5 w-5 ${iconColors[type]}`}>{icons[type]}</div>
         </div>
         <div className="ml-3">
-          {title && (
-            <h3 className={`text-sm font-medium ${textColors[type]}`}>{title}</h3>
-          )}
+          {title && <h3 className={`text-sm font-medium ${textColors[type]}`}>{title}</h3>}
           <div className={`text-sm ${textColors[type]} mt-1`}>{message}</div>
         </div>
         {onClose && (

@@ -10,17 +10,25 @@ import { Alert } from '@/components/ui/Alert';
 
 // Schéma de validation du formulaire
 const registerSchema = yup.object().shape({
-  firstName: yup.string().required('Le prénom est requis').min(2, 'Le prénom doit contenir au moins 2 caractères'),
-  lastName: yup.string().required('Le nom est requis').min(2, 'Le nom doit contenir au moins 2 caractères'),
-  email: yup.string().required('L\'email est requis').email('Email invalide'),
-  password: yup.string()
+  firstName: yup
+    .string()
+    .required('Le prénom est requis')
+    .min(2, 'Le prénom doit contenir au moins 2 caractères'),
+  lastName: yup
+    .string()
+    .required('Le nom est requis')
+    .min(2, 'Le nom doit contenir au moins 2 caractères'),
+  email: yup.string().required("L'email est requis").email('Email invalide'),
+  password: yup
+    .string()
     .required('Le mot de passe est requis')
     .min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-  confirmPassword: yup.string()
+  confirmPassword: yup
+    .string()
     .oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas')
     .required('Veuillez confirmer votre mot de passe'),
   role: yup.string().oneOf(Object.values(UserRole), 'Rôle invalide').required('Le rôle est requis'),
-  phone: yup.string().optional()
+  phone: yup.string().optional(),
 });
 
 type RegisterFormData = RegisterData & { confirmPassword: string };
@@ -38,7 +46,11 @@ const RegisterPage: React.FC = () => {
   }, [isAuthenticated, router]);
 
   // Configuration du formulaire avec React Hook Form et Yup
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
     resolver: yupResolver(registerSchema),
     defaultValues: {
       firstName: '',
@@ -47,8 +59,8 @@ const RegisterPage: React.FC = () => {
       password: '',
       confirmPassword: '',
       role: UserRole.PRESTATAIRE,
-      phone: ''
-    }
+      phone: '',
+    },
   });
 
   // Soumission du formulaire
@@ -67,7 +79,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Créer votre compte
@@ -81,7 +93,7 @@ const RegisterPage: React.FC = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
           {error && (
             <Alert
               type="error"
@@ -113,9 +125,9 @@ const RegisterPage: React.FC = () => {
                     id="firstName"
                     type="text"
                     autoComplete="given-name"
-                    className={`appearance-none block w-full px-3 py-2 border ${
+                    className={`block w-full appearance-none border px-3 py-2 ${
                       errors.firstName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                     {...register('firstName')}
                   />
                 </div>
@@ -133,9 +145,9 @@ const RegisterPage: React.FC = () => {
                     id="lastName"
                     type="text"
                     autoComplete="family-name"
-                    className={`appearance-none block w-full px-3 py-2 border ${
+                    className={`block w-full appearance-none border px-3 py-2 ${
                       errors.lastName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                     {...register('lastName')}
                   />
                 </div>
@@ -155,15 +167,13 @@ const RegisterPage: React.FC = () => {
                   id="email"
                   type="email"
                   autoComplete="email"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`block w-full appearance-none border px-3 py-2 ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                   {...register('email')}
                 />
               </div>
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
             {/* Téléphone */}
@@ -176,13 +186,11 @@ const RegisterPage: React.FC = () => {
                   id="phone"
                   type="tel"
                   autoComplete="tel"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                   {...register('phone')}
                 />
               </div>
-              {errors.phone && (
-                <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>
-              )}
+              {errors.phone && <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>}
             </div>
 
             {/* Rôle */}
@@ -193,18 +201,16 @@ const RegisterPage: React.FC = () => {
               <div className="mt-1">
                 <select
                   id="role"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`block w-full appearance-none border px-3 py-2 ${
                     errors.role ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  } rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                   {...register('role')}
                 >
                   <option value={UserRole.CUISINISTE}>Cuisiniste</option>
                   <option value={UserRole.PRESTATAIRE}>Prestataire</option>
                 </select>
               </div>
-              {errors.role && (
-                <p className="mt-2 text-sm text-red-600">{errors.role.message}</p>
-              )}
+              {errors.role && <p className="mt-2 text-sm text-red-600">{errors.role.message}</p>}
             </div>
 
             {/* Mot de passe */}
@@ -217,9 +223,9 @@ const RegisterPage: React.FC = () => {
                   id="password"
                   type="password"
                   autoComplete="new-password"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`block w-full appearance-none border px-3 py-2 ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                   {...register('password')}
                 />
               </div>
@@ -238,9 +244,9 @@ const RegisterPage: React.FC = () => {
                   id="confirmPassword"
                   type="password"
                   autoComplete="new-password"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`block w-full appearance-none border px-3 py-2 ${
                     errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
                   {...register('confirmPassword')}
                 />
               </div>
@@ -255,15 +261,15 @@ const RegisterPage: React.FC = () => {
                 id="terms"
                 name="terms"
                 type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 required
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                 J'accepte les{' '}
                 <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-500">
                   conditions d'utilisation
-                </Link>
-                {' '}et la{' '}
+                </Link>{' '}
+                et la{' '}
                 <Link href="/privacy" className="font-medium text-blue-600 hover:text-blue-500">
                   politique de confidentialité
                 </Link>
@@ -275,7 +281,7 @@ const RegisterPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
               >
                 {loading ? 'Création du compte...' : 'Créer mon compte'}
               </button>

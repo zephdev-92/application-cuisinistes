@@ -1,18 +1,33 @@
-import { AppProps } from 'next/app';
+import { useEffect } from 'react';
 import { AuthProvider } from '../contexts/auth.context';
-import '../styles/globals.css';
+import { AppProps } from 'next/app';
+import router from 'next/router';
+import '@/styles/globals.css';
 
-type PageWithLayout = {
-  getLayout?: (page: React.ReactElement) => React.ReactNode;
+const isProtectedRoute = (path: string): boolean => {
+  const protectedPaths = ['/dashboard', '/clients', '/profile'];
+  return protectedPaths.some(protectedPath => path.startsWith(protectedPath));
 };
 
-function MyApp({
-  Component,
-  pageProps,
-}: AppProps & { Component: PageWithLayout }) {
-  const getLayout = Component.getLayout || (page => page);
+function MyApp({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const path = router.pathname;
 
-  return <AuthProvider>{getLayout(<Component {...pageProps} />)}</AuthProvider>;
+      if (!token && isProtectedRoute(path)) {
+        // Cette ligne cause le problème
+        router.push(`/auth/login?redirectTo=${encodeURIComponent(path)}`);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+  return (
+    <AuthProvider>
+      <Component {...pageProps} />
+    </AuthProvider>
+  );
 }
 
 export default MyApp;
