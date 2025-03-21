@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Récupérer le token dans les cookies
+  // Récupérer le token dans les cookies ou localStorage
   const token = request.cookies.get('token')?.value;
 
   // URL actuelle
@@ -22,11 +22,11 @@ export function middleware(request: NextRequest) {
 
   // Vérifier si l'URL actuelle est une route protégée
   const isProtectedRoute = protectedRoutes.some(
-    route => pathname === route || pathname.startsWith(`${route}/`)
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
   // Vérifier si l'URL actuelle est une route d'authentification
-  const isAuthRoute = authRoutes.some(route => pathname === route);
+  const isAuthRoute = authRoutes.some((route) => pathname === route);
 
   // Si l'utilisateur n'est pas connecté et tente d'accéder à une route protégée
   if (!token && isProtectedRoute) {

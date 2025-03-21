@@ -1,80 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useAuth, RegisterData, UserRole } from '@/contexts/auth.context';
+import { useAuth } from '@/contexts/auth.context';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { Alert } from '@/components/ui/Alert';
+import { NextPageWithLayout } from '../_app';
 
 // Schéma de validation du formulaire
-const registerSchema = yup.object().shape({
-  firstName: yup
-    .string()
-    .required('Le prénom est requis')
-    .min(2, 'Le prénom doit contenir au moins 2 caractères'),
-  lastName: yup
-    .string()
-    .required('Le nom est requis')
-    .min(2, 'Le nom doit contenir au moins 2 caractères'),
+const loginSchema = yup.object().shape({
   email: yup.string().required("L'email est requis").email('Email invalide'),
-  password: yup
-    .string()
-    .required('Le mot de passe est requis')
-    .min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-  confirmPassword: yup
-    .string()
-    .oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas')
-    .required('Veuillez confirmer votre mot de passe'),
-  role: yup.string().oneOf(Object.values(UserRole), 'Rôle invalide').required('Le rôle est requis'),
-  phone: yup.string().optional(),
+  password: yup.string().required('Le mot de passe est requis'),
 });
 
-type RegisterFormData = RegisterData & { confirmPassword: string };
+// Interface pour les données de formulaire
+interface LoginFormData {
+  email: string;
+  password: string;
+}
 
-const RegisterPage: React.FC = () => {
-  const { register: registerUser, loading, error, isAuthenticated, clearError } = useAuth();
+const LoginPage: NextPageWithLayout = () => {
+  const { login, loading, error, isAuthenticated, clearError } = useAuth();
   const router = useRouter();
-  const [showSuccess, setShowSuccess] = useState(false);
+  const { redirect, session } = router.query;
 
   // Rediriger si déjà authentifié
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      const redirectPath = redirect ? String(redirect) : '/dashboard';
+      router.push(redirectPath);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, redirect]);
 
   // Configuration du formulaire avec React Hook Form et Yup
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: yupResolver(registerSchema),
+  } = useForm<LoginFormData>({
+    resolver: yupResolver(loginSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
       email: '',
       password: '',
-      confirmPassword: '',
-      role: UserRole.PRESTATAIRE,
-      phone: '',
     },
   });
 
   // Soumission du formulaire
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: LoginFormData) => {
     clearError();
-
-    const { confirmPassword, ...registerData } = data;
-
     try {
-      setShowSuccess(true);
-      await registerUser(registerData);
+      await login(data.email, data.password);
+      // La redirection est gérée dans le contexte d'authentification
     } catch (err) {
-      setShowSuccess(false);
       // L'erreur est gérée par le contexte d'authentification
+      console.error("Erreur de connexion:", err);
     }
   };
 
@@ -82,12 +63,12 @@ const RegisterPage: React.FC = () => {
     <div className="flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Créer votre compte
+          Connexion à votre compte
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Ou{' '}
-          <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
-            connectez-vous à votre compte existant
+          <Link href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500">
+            créez un nouveau compte
           </Link>
         </p>
       </div>
@@ -97,66 +78,23 @@ const RegisterPage: React.FC = () => {
           {error && (
             <Alert
               type="error"
-              title="Erreur d'inscription"
+              title="Erreur de connexion"
               message={error}
               onClose={clearError}
               className="mb-4"
             />
           )}
 
-          {showSuccess && !error && (
+          {session === 'expired' && (
             <Alert
-              type="success"
-              title="Inscription réussie"
-              message="Votre compte a été créé avec succès."
+              type="warning"
+              title="Session expirée"
+              message="Votre session a expiré. Veuillez vous reconnecter."
               className="mb-4"
             />
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* Prénom et Nom */}
-            <div className="flex space-x-4">
-              <div className="w-1/2">
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  Prénom
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="firstName"
-                    type="text"
-                    autoComplete="given-name"
-                    className={`block w-full appearance-none border px-3 py-2 ${
-                      errors.firstName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
-                    {...register('firstName')}
-                  />
-                </div>
-                {errors.firstName && (
-                  <p className="mt-2 text-sm text-red-600">{errors.firstName.message}</p>
-                )}
-              </div>
-
-              <div className="w-1/2">
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Nom
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="lastName"
-                    type="text"
-                    autoComplete="family-name"
-                    className={`block w-full appearance-none border px-3 py-2 ${
-                      errors.lastName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
-                    {...register('lastName')}
-                  />
-                </div>
-                {errors.lastName && (
-                  <p className="mt-2 text-sm text-red-600">{errors.lastName.message}</p>
-                )}
-              </div>
-            </div>
-
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -176,43 +114,6 @@ const RegisterPage: React.FC = () => {
               {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
-            {/* Téléphone */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Téléphone (optionnel)
-              </label>
-              <div className="mt-1">
-                <input
-                  id="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-                  {...register('phone')}
-                />
-              </div>
-              {errors.phone && <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>}
-            </div>
-
-            {/* Rôle */}
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Je suis un
-              </label>
-              <div className="mt-1">
-                <select
-                  id="role"
-                  className={`block w-full appearance-none border px-3 py-2 ${
-                    errors.role ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
-                  {...register('role')}
-                >
-                  <option value={UserRole.CUISINISTE}>Cuisiniste</option>
-                  <option value={UserRole.PRESTATAIRE}>Prestataire</option>
-                </select>
-              </div>
-              {errors.role && <p className="mt-2 text-sm text-red-600">{errors.role.message}</p>}
-            </div>
-
             {/* Mot de passe */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -222,7 +123,7 @@ const RegisterPage: React.FC = () => {
                 <input
                   id="password"
                   type="password"
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   className={`block w-full appearance-none border px-3 py-2 ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
@@ -234,46 +135,28 @@ const RegisterPage: React.FC = () => {
               )}
             </div>
 
-            {/* Confirmation du mot de passe */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirmer le mot de passe
-              </label>
-              <div className="mt-1">
+            {/* Options supplémentaires */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  className={`block w-full appearance-none border px-3 py-2 ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm`}
-                  {...register('confirmPassword')}
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                  Se souvenir de moi
+                </label>
               </div>
-              {errors.confirmPassword && (
-                <p className="mt-2 text-sm text-red-600">{errors.confirmPassword.message}</p>
-              )}
-            </div>
 
-            {/* Conditions d'utilisation */}
-            <div className="flex items-center">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                required
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                J'accepte les{' '}
-                <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-500">
-                  conditions d'utilisation
-                </Link>{' '}
-                et la{' '}
-                <Link href="/privacy" className="font-medium text-blue-600 hover:text-blue-500">
-                  politique de confidentialité
+              <div className="text-sm">
+                <Link
+                  href="/auth/forgot-password"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
+                  Mot de passe oublié ?
                 </Link>
-              </label>
+              </div>
             </div>
 
             {/* Bouton de soumission */}
@@ -283,7 +166,7 @@ const RegisterPage: React.FC = () => {
                 disabled={loading}
                 className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
               >
-                {loading ? 'Création du compte...' : 'Créer mon compte'}
+                {loading ? 'Connexion en cours...' : 'Se connecter'}
               </button>
             </div>
           </form>
@@ -294,8 +177,8 @@ const RegisterPage: React.FC = () => {
 };
 
 // Définir le layout pour cette page
-RegisterPage.getLayout = (page: React.ReactElement) => (
-  <AuthLayout title="Inscription">{page}</AuthLayout>
+LoginPage.getLayout = (page: React.ReactElement) => (
+  <AuthLayout title="Connexion">{page}</AuthLayout>
 );
 
-export default RegisterPage;
+export default LoginPage;

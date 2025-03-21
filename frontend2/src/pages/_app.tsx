@@ -1,33 +1,29 @@
-import { useEffect } from 'react';
-import { AuthProvider } from '../contexts/auth.context';
 import { AppProps } from 'next/app';
-import router from 'next/router';
+import { AuthProvider } from '../contexts/auth.context';
 import '@/styles/globals.css';
+import { ReactElement, ReactNode } from 'react';
+import { NextPage } from 'next';
 
-const isProtectedRoute = (path: string): boolean => {
-  const protectedPaths = ['/dashboard', '/clients', '/profile'];
-  return protectedPaths.some(protectedPath => path.startsWith(protectedPath));
+// Types pour la compatibilité de layout avec Next.js
+export type NextPageWithLayout<P = object> = NextPage<P> & {
+  getLayout?: (page: ReactElement) => ReactNode;
 };
 
-function MyApp({ Component, pageProps }: AppProps) {
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const path = router.pathname;
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
 
-      if (!token && isProtectedRoute(path)) {
-        // Cette ligne cause le problème
-        router.push(`/auth/login?redirectTo=${encodeURIComponent(path)}`);
-      }
-    };
+function MyApp({ Component, pageProps }: AppPropsWithLayout) {
+  // Utiliser le layout personnalisé si disponible, sinon utiliser le layout par défaut
+  const getLayout = Component.getLayout ?? ((page) => page);
 
-    checkAuth();
-  }, [router]);
   return (
     <AuthProvider>
-      <Component {...pageProps} />
+      {getLayout(<Component {...pageProps} />)}
     </AuthProvider>
   );
 }
 
 export default MyApp;
+
+

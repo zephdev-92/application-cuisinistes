@@ -12,7 +12,10 @@ export const apiClient = axios.create({
 // Intercepteur pour ajouter le token d'authentification aux requêtes
 apiClient.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('token');
+    // Essayer d'abord de récupérer le token du cookie, puis du localStorage
+    const token = Cookies.get('token') ||
+                 (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -35,6 +38,7 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         // Supprimer le token expiré
         Cookies.remove('token');
+        localStorage.removeItem('token');
 
         // Rediriger vers la page de connexion si l'erreur n'est pas déjà venue d'une tentative de connexion
         const isAuthRoute =
@@ -42,6 +46,8 @@ apiClient.interceptors.response.use(
           window.location.pathname.includes('/auth/register');
 
         if (!isAuthRoute) {
+          // Sauvegarder l'URL actuelle pour y revenir après connexion
+          localStorage.setItem('redirectAfterLogin', window.location.pathname);
           window.location.href = '/auth/login?session=expired';
         }
       }
@@ -50,3 +56,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export default apiClient;

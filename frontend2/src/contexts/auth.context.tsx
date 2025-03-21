@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { authService } from '../services/authService';
 import { AxiosError } from 'axios';
 import { User, RegisterData, UserRole } from '../types/user';
+import Cookies from 'js-cookie';
 
 interface ApiErrorResponse {
   success: boolean;
@@ -14,11 +15,13 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   setUser: (user: User | null) => void;
+  clearError: () => void;
 }
 
 // Créer le contexte avec une valeur par défaut
@@ -55,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token') || Cookies.get('token');
         if (!token) {
           setIsLoading(false);
           return;
@@ -67,6 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error("Erreur lors de la vérification de l'authentification:", error);
         localStorage.removeItem('token');
+        Cookies.remove('token');
       } finally {
         setIsLoading(false);
       }
@@ -74,6 +78,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuth();
   }, []);
+
+  const clearError = () => setError(null);
 
   // Fonction de connexion
   const login = async (email: string, password: string) => {
@@ -83,8 +89,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.login(email, password);
       setUser(response.user);
 
+      // Stocker le token à la fois dans localStorage et dans un cookie
+      localStorage.setItem('token', response.token);
+      Cookies.set('token', response.token, {
+        expires: 7, // 7 jours
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
       // Redirection après connexion
-      const redirectPath = localStorage.getItem('redirectAfterLogin') || '/dashboard';
+      const redirectPath =
+        router.query.redirect?.toString() ||
+        localStorage.getItem('redirectAfterLogin') ||
+        '/dashboard';
+
       localStorage.removeItem('redirectAfterLogin');
       router.push(redirectPath);
     } catch (error: unknown) {
@@ -102,6 +121,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await authService.logout();
       setUser(null);
+
+      // Supprimer le token du localStorage et des cookies
+      localStorage.removeItem('token');
+      Cookies.remove('token');
+
       router.push('/auth/login');
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
@@ -110,13 +134,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Fonction d'inscription (ajustez selon vos besoins)
+  // Fonction d'inscription
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await authService.register(userData);
       setUser(response.user);
+
+      // Stocker le token à la fois dans localStorage et dans un cookie
+      localStorage.setItem('token', response.token);
+      Cookies.set('token', response.token, {
+        expires: 7, // 7 jours
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
       router.push('/dashboard');
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ApiErrorResponse>;
@@ -131,11 +165,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated: !!user,
     isLoading,
+    loading: isLoading,
     error,
     login,
     logout,
     register,
     setUser,
+    clearError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
