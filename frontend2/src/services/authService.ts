@@ -1,14 +1,6 @@
 import { apiClient } from '../lib/apiClient';
 import Cookies from 'js-cookie';
-
-interface RegisterData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  role?: string;
-  phone?: string;
-}
+import { RegisterData } from '@/types/user';
 
 export const authService = {
   login: async (email: string, password: string) => {
@@ -55,7 +47,9 @@ export const authService = {
   },
 
   register: async (userData: RegisterData) => {
-    const response = await apiClient.post('/auth/register', userData);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword, terms, ...registerData } = userData as RegisterData;
+    const response = await apiClient.post('/auth/register', registerData);
 
     if (response.data && response.data.token) {
       // Stocker le token dans localStorage pour la persistance

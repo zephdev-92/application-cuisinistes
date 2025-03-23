@@ -52,8 +52,10 @@ export interface RegisterData {
   lastName: string;
   email: string;
   password: string;
-  phone?: string;
+  confirmPassword?: string;
   role?: UserRole;
+  phone?: string;
+  terms?: boolean;
 }
 
 /**

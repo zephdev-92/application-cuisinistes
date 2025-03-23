@@ -13,13 +13,15 @@ import { NextPage } from 'next';
 const clientSchema = yup.object().shape({
   firstName: yup.string().required('Le prénom est requis'),
   lastName: yup.string().required('Le nom est requis'),
-  email: yup.string().email('Email invalide').required("L'email est requis"),
-  phone: yup.string().optional(),
-  'address.street': yup.string().optional(),
-  'address.city': yup.string().optional(),
-  'address.postalCode': yup.string().optional(),
-  'address.country': yup.string().optional(),
-  notes: yup.string().optional(),
+  email: yup.string().email('Email invalide').required('L\'email est requis'),
+  phone: yup.string().required('Le téléphone est requis'),
+  address: yup.object().shape({
+    street: yup.string().required(),
+    city: yup.string().required(),
+    postalCode: yup.string().required(),
+    country: yup.string().required()
+  }),
+  notes: yup.string().required()
 });
 
 type PageWithLayout = NextPage<Record<string, unknown>> & {
@@ -50,7 +52,7 @@ const ClientDetailPage: PageWithLayout = () => {
         street: '',
         city: '',
         postalCode: '',
-        country: 'France',
+        country: 'France'
       },
       notes: '',
     },
@@ -58,28 +60,43 @@ const ClientDetailPage: PageWithLayout = () => {
 
   // Charger le client au montage
   useEffect(() => {
+    let isMounted = true; // Pour éviter les mises à jour si le composant est démonté
+
     if (id && typeof id === 'string') {
-      getClientById(id)
-        .then((client) => {
-          reset({
-            firstName: client.firstName,
-            lastName: client.lastName,
-            email: client.email,
-            phone: client.phone || '',
-            address: {
-              street: client.address?.street || '',
-              city: client.address?.city || '',
-              postalCode: client.address?.postalCode || '',
-              country: client.address?.country || 'France',
-            },
-            notes: client.notes || '',
+      // On ne recharge le client que si on n'a pas déjà un client avec cet ID
+      if (!client || client._id !== id) {
+        getClientById(id)
+          .then((fetchedClient) => {
+            if (isMounted) { // Vérifiez que le composant est toujours monté
+              reset({
+                firstName: fetchedClient.firstName,
+                lastName: fetchedClient.lastName,
+                email: fetchedClient.email,
+                phone: fetchedClient.phone || '',
+                address: {
+                  street: fetchedClient.address?.street || '',
+                  city: fetchedClient.address?.city || '',
+                  postalCode: fetchedClient.address?.postalCode || '',
+                  country: fetchedClient.address?.country || 'France',
+                },
+                notes: fetchedClient.notes || '',
+              });
+            }
+          })
+          .catch((error) => {
+            if (isMounted) {
+              console.error('Erreur lors du chargement du client:', error);
+            }
           });
-        })
-        .catch((error) => {
-          console.error('Erreur lors du chargement du client:', error);
-        });
+      }
     }
-  }, [id, getClientById, reset]);
+
+    // Fonction de nettoyage
+    return () => {
+      isMounted = false;
+    };
+  }, [id, reset]);
+
 
   // Mettre à jour le client
   const onSubmit = async (data: ClientFormData) => {
@@ -89,7 +106,7 @@ const ClientDetailPage: PageWithLayout = () => {
         setSuccess('Client mis à jour avec succès');
         setTimeout(() => setSuccess(null), 3000);
         setIsEditing(false);
-      } catch (err) {
+      } catch {
         // L'erreur est déjà gérée par le hook
       }
     }
@@ -130,28 +147,28 @@ const ClientDetailPage: PageWithLayout = () => {
               </button>
             ) : (
               <button
-                onClick={() => {
-                  setIsEditing(false);
-                  if (client) {
-                    reset({
-                      firstName: client.firstName,
-                      lastName: client.lastName,
-                      email: client.email,
-                      phone: client.phone || '',
-                      address: {
-                        street: client.address?.street || '',
-                        city: client.address?.city || '',
-                        postalCode: client.address?.postalCode || '',
-                        country: client.address?.country || 'France',
-                      },
-                      notes: client.notes || '',
-                    });
-                  }
-                }}
-                className="rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
-              >
-                Annuler
-              </button>
+  onClick={() => {
+    setIsEditing(false);
+    if (client) {
+      reset({
+        firstName: client.firstName,
+        lastName: client.lastName,
+        email: client.email,
+        phone: client.phone || '',
+        address: {
+          street: client.address?.street || '',
+          city: client.address?.city || '',
+          postalCode: client.address?.postalCode || '',
+          country: client.address?.country || 'France',  // Ajout du pays
+        },
+        notes: client.notes || '',
+      });
+    }
+  }}
+  className="rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
+  >
+  Annuler
+</button>
             )}
           </div>
         </div>
@@ -379,7 +396,7 @@ const ClientDetailPage: PageWithLayout = () => {
                   </dd>
                 </div>
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Date d'ajout</dt>
+                  <dt className="text-sm font-medium text-gray-500">Date d&apos;ajout</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     {client?.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}
                   </dd>
@@ -422,7 +439,7 @@ const ClientDetailPage: PageWithLayout = () => {
 
 // Définir le layout pour cette page
 ClientDetailPage.getLayout = (page: React.ReactElement) => (
-  <DashboardLayout title="Détails du client">{page}</DashboardLayout>
+  <DashboardLayout>{page}</DashboardLayout>
 );
 
 export default ClientDetailPage;

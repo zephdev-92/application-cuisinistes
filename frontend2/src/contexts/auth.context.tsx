@@ -5,6 +5,11 @@ import { AxiosError } from 'axios';
 import { User, RegisterData, UserRole } from '../types/user';
 import Cookies from 'js-cookie';
 
+interface RegisterFormData extends RegisterData {
+  terms?: boolean;
+  confirmPassword: string;
+}
+
 interface ApiErrorResponse {
   success: boolean;
   error?: string;
@@ -19,7 +24,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
+  register: (userData: RegisterFormData) => Promise<void>;
   setUser: (user: User | null) => void;
   clearError: () => void;
 }
@@ -135,11 +140,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Fonction d'inscription
-  const register = async (userData: RegisterData) => {
+  const register = async (userData: RegisterFormData) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.register(userData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { confirmPassword, terms, ...registerData } = userData;
+
+      const response = await authService.register(registerData);
       setUser(response.user);
 
       // Stocker le token à la fois dans localStorage et dans un cookie

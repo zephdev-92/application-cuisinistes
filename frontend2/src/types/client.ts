@@ -4,11 +4,11 @@
  * Interface représentant un client dans l'application
  */
 export interface Client {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phone: string;
   address?: {
     street?: string;
     city?: string;
@@ -16,8 +16,8 @@ export interface Client {
     country?: string;
   };
   notes?: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -52,4 +52,22 @@ export interface PaginatedClientsResponse {
 export interface ClientResponse {
   success: boolean;
   data: Client;
+}
+
+/**
+ * Interface pour les données du formulaire client
+ * Utilisée partout où un formulaire client est nécessaire
+ */
+export interface ClientFormData {
+ firstName: string;
+ lastName: string;
+ email: string;
+ phone: string;
+ address: {
+   street: string;
+   city: string;
+   postalCode: string;
+   country: string;
+ };
+ notes: string;
 }

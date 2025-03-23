@@ -1,103 +1,256 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios, { AxiosError } from 'axios';
-import { useRouter } from 'next/router';
+import { useState, useCallback } from 'react';
+import axios from 'axios';
+import { apiClient } from '@/lib/apiClient';
+import {
+  Client,
+  PaginatedClientsResponse,
+  ClientResponse,
+  ClientFormData
+} from '@/types/client';
 
-interface Client {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
 }
 
-interface ApiErrorResponse {
-  error: string;
-}
+// Fonction utilitaire pour créer un client vide
+const createEmptyClient = (): Client => ({
+  _id: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  createdAt: new Date(),
+  updatedAt: new Date()
+});
 
-export const useClients = (page = 1, limit = 10) => {
+export function useClients(initialPage = 1, initialLimit = 10) {
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [client, setClient] = useState<Client | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isEmpty, setIsEmpty] = useState(false); // Nouvel état pour indiquer si la liste est vide
-  const [pagination, setPagination] = useState({
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: initialPage,
+    limit: initialLimit,
     total: 0,
-    page: 1,
-    pages: 1,
+    pages: 0,
   });
+  const [isEmpty, setIsEmpty] = useState<boolean>(false);
+  const [noSearchResults, setNoSearchResults] = useState<boolean>(false);
 
-  const router = useRouter();
+  // Fonction utilitaire pour gérer les erreurs d'API
+  const handleApiError = (err: unknown, defaultMessage: string): string => {
+    console.error(defaultMessage, err);
 
-  const fetchClients = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      // Récupérer le token depuis le localStorage
-      const token = localStorage.getItem('token');
-
-      // Au lieu de lancer une erreur, redirigez vers la page de connexion
-      if (!token) {
-        // Stockez l'URL actuelle pour rediriger l'utilisateur après la connexion
-        localStorage.setItem('redirectAfterLogin', router.asPath);
-
-        // Rediriger vers la page de connexion
-        router.push('/login');
-        return; // Arrêtez l'exécution ici
+    if (axios.isAxiosError(err)) {
+      // Gestion spécifique d'erreurs réseau
+      if (err.code === 'ERR_NETWORK') {
+        return "Le serveur n'est pas accessible. Vérifiez votre connexion et que l'API est bien lancée.";
       }
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/clients?page=${page}&limit=${limit}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      // Erreur avec une réponse du serveur
+      if (err.response) {
+        const status = err.response.status;
+
+        // Gérer les cas d'erreurs HTTP spécifiques
+        switch (status) {
+          case 401:
+            return "Vous n'êtes pas autorisé à accéder à cette ressource. Veuillez vous reconnecter.";
+          case 403:
+            return "Accès refusé. Vous n'avez pas les droits nécessaires.";
+          case 404:
+            return "La ressource demandée n'existe pas.";
+          case 500:
+            return "Erreur interne du serveur. Veuillez réessayer plus tard.";
+          default:
+            return `Erreur ${status}: ${err.response.statusText || 'Erreur inconnue'}`;
         }
-      );
+      }
+
+      // Erreur sans réponse du serveur
+      return "Erreur de connexion au serveur. Vérifiez votre connexion réseau.";
+    }
+
+    // Pour les autres types d'erreurs
+    return err instanceof Error ? err.message : defaultMessage;
+  };
+
+  // Récupérer la liste des clients avec pagination
+  const fetchClients = useCallback(async (page = 1, limit = 10) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.get<PaginatedClientsResponse>(`/clients?page=${page}&limit=${limit}`);
 
       if (response.data.success) {
-        setClients(response.data.data);
-        setPagination(response.data.pagination);
-        setIsEmpty(response.data.data.length === 0 && response.data.pagination.total === 0);
+        const { data, pagination: paginationData } = response.data;
+        setClients(data);
+        setFilteredClients(data); // Initialiser les clients filtrés avec tous les clients
+        setPagination({
+          page,
+          limit,
+          total: paginationData.total,
+          pages: paginationData.pages
+        });
+        setIsEmpty(data.length === 0);
+        setNoSearchResults(false); // Réinitialiser l'état de recherche sans résultats
       } else {
-        throw new Error(response.data.error || 'Une erreur est survenue');
+        throw new Error('Erreur lors de la récupération des clients');
       }
-    } catch (error: unknown) {
-      // Gérer spécifiquement les erreurs 401 (non autorisé)
-      if (error instanceof AxiosError && error.response?.status === 401) {
-        localStorage.removeItem('token'); // Supprimer le token invalide
-        router.push('/login');
-        return;
-      }
-
-      console.error('Erreur lors de la récupération des clients:', error);
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      setError(
-        axiosError.response?.data?.error ||
-          'Une erreur est survenue lors de la récupération des clients'
-      );
+    } catch (err) {
+      const errorMessage = handleApiError(err, 'Erreur lors du chargement des clients');
+      setError(errorMessage);
+      setClients([]);
+      setFilteredClients([]);
+      setIsEmpty(true);
     } finally {
       setLoading(false);
     }
-  }, [page, limit, router]);
+  }, []);
 
-  useEffect(() => {
-    let isMounted = true;
+  // Fonction pour rechercher des clients
+  const searchClients = useCallback((searchTerm: string) => {
+    setSearchTerm(searchTerm);
 
-    const getClients = async () => {
-      try {
-        await fetchClients();
-      } catch (error) {
-        if (isMounted) {
-          console.error('Erreur dans useEffect:', error);
-        }
+    if (!searchTerm.trim()) {
+      // Si la recherche est vide, afficher tous les clients
+      setFilteredClients(clients);
+      setNoSearchResults(false);
+      return;
+    }
+
+    // Filtrer les clients selon le terme de recherche
+    const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+    const results = clients.filter(client =>
+      client.firstName.toLowerCase().includes(normalizedSearchTerm) ||
+      client.lastName.toLowerCase().includes(normalizedSearchTerm) ||
+      client.email.toLowerCase().includes(normalizedSearchTerm) ||
+      (client.phone && client.phone.includes(normalizedSearchTerm))
+    );
+
+    setFilteredClients(results);
+    setNoSearchResults(results.length === 0);
+  }, [clients]);
+
+  // Récupérer un client par son ID
+  const getClientById = useCallback(async (id: string): Promise<Client> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.get<ClientResponse>(`/clients/${id}`);
+
+      if (response.data.success) {
+        setClient(response.data.data);
+        return response.data.data;
+      } else {
+        throw new Error('Erreur lors de la récupération du client');
       }
-    };
+    } catch (err) {
+      const errorMessage = handleApiError(err, 'Erreur lors du chargement du client');
+      setError(errorMessage);
 
-    getClients();
+      // Retourne un client vide mais valide pour éviter les erreurs en cascade
+      return createEmptyClient();
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [fetchClients]);
+  // Créer un nouveau client
+  const createClient = async (clientData: ClientFormData) => {
+    setLoading(true);
+    setError(null);
 
-  return { clients, loading, error, isEmpty, pagination, refetch: fetchClients };
-};
+    try {
+      const response = await apiClient.post<ClientResponse>('/clients', clientData);
+
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error('Erreur lors de la création du client');
+      }
+    } catch (err) {
+      const errorMessage = handleApiError(err, 'Erreur lors de la création du client');
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mettre à jour un client existant
+  const updateClient = async (id: string, clientData: ClientFormData) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.put<ClientResponse>(`/clients/${id}`, clientData);
+
+      if (response.data.success) {
+        setClient(response.data.data);
+        return response.data.data;
+      } else {
+        throw new Error('Erreur lors de la mise à jour du client');
+      }
+    } catch (err) {
+      const errorMessage = handleApiError(err, 'Erreur lors de la mise à jour du client');
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Supprimer un client
+  const deleteClient = async (id: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.delete(`/clients/${id}`);
+
+      if (response.data.success) {
+        return true;
+      } else {
+        throw new Error('Erreur lors de la suppression du client');
+      }
+    } catch (err) {
+      const errorMessage = handleApiError(err, 'Erreur lors de la suppression du client');
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Rafraîchir la liste des clients
+  const refetch = () => fetchClients(pagination.page, pagination.limit);
+
+  return {
+    clients: filteredClients, // Retourner les clients filtrés au lieu de tous les clients
+    allClients: clients, // Garder accès à tous les clients si nécessaire
+    client,
+    loading,
+    error,
+    isEmpty,
+    noSearchResults,
+    searchTerm,
+    pagination,
+    fetchClients,
+    getClientById,
+    createClient,
+    updateClient,
+    deleteClient,
+    searchClients,
+    refetch
+  };
+}
+
+// Export the Client type
+export type { Client, ClientFormData };
