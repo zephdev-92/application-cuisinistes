@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes';
 import profileRoutes from './routes/profile.routes';
 import clientRoutes from './routes/client.routes';
 import testRoutes from './routes/test.routes';
+import providerRoutes from './routes/provider.routes';
 // Création de l'application Express
 const app = express();
 
@@ -47,5 +48,6 @@ app.use('/uploads', (req, res, next) => {
 
 app.use('/api/clients', clientRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/providers', providerRoutes);
 export default app;
 

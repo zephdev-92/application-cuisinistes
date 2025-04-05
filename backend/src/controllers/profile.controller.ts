@@ -1,4 +1,3 @@
-// backend/src/controllers/profile.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 import { AuthRequest } from '../types/express';
@@ -93,7 +92,7 @@ if (req.body.specialties && req.user?.role === 'prestataire') {
     // Si un logo a été uploadé via multer
     if ((req as any).file) {
         // Générer l'URL pour le logo
-       
+
         const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
         updateData.companyLogo = `${backendUrl}/uploads/${(req as any).file.filename}`;
       // Supprimer l'ancien logo si existant
