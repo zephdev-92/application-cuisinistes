@@ -33,7 +33,7 @@ describe('API Integration Tests', () => {
         password: 'password123'
       });
 
-    authToken = loginResponse.body.token;
+    authToken = loginResponse.body.data.token;
   });
 
   // Nettoyer l'AuditLogger après tous les tests pour éviter que Jest reste ouvert
@@ -194,7 +194,7 @@ describe('API Integration Tests', () => {
         address: {
           street: '123 Test Street',
           city: 'Test City',
-          zipCode: '12345',
+          postalCode: '12345',
           country: 'France'
         },
         phone: '+33123456789',
@@ -223,7 +223,7 @@ describe('API Integration Tests', () => {
           address: {
             street: '456 New Street',
             city: 'New City',
-            zipCode: '67890',
+            postalCode: '67890',
             country: 'France'
           },
           phone: '+33987654321',
@@ -409,6 +409,10 @@ describe('API Integration Tests', () => {
     });
 
     it('devrait gérer les erreurs de validation JSON', async () => {
+      // Temporairement changer NODE_ENV pour tester la gestion d'erreur en production
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
       const response = await request(app)
         .post('/api/auth/login')
         .send('invalid json')
@@ -416,6 +420,9 @@ describe('API Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+
+      // Remettre NODE_ENV
+      process.env.NODE_ENV = originalEnv;
     });
   });
 });

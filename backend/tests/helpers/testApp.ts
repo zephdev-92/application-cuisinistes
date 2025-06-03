@@ -14,6 +14,7 @@ import authRoutes from '../../src/routes/auth.routes';
 import profileRoutes from '../../src/routes/profile.routes';
 import clientRoutes from '../../src/routes/client.routes';
 import adminRoutes from '../../src/routes/admin.routes';
+import showroomRoutes from '../../src/routes/showroom.routes';
 
 export function createTestApp() {
   const app = express();
@@ -39,6 +40,7 @@ export function createTestApp() {
   app.use('/api/users', profileRoutes);
   app.use('/api/clients', clientRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/showrooms', showroomRoutes);
 
   // Middleware pour les routes non trouvées
   app.all('*', notFound);

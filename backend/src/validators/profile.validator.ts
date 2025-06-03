@@ -36,7 +36,7 @@ const updateProfileSchema = Joi.object({
   phone: Joi.string()
     .optional()
     .trim()
-    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .pattern(/^\+?[\d\s-]{8,15}$/)
     .messages({
       'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
     }),

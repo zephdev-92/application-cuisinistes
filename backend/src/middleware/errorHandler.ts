@@ -7,6 +7,7 @@ export interface CustomError extends Error {
   status?: string;
   isOperational?: boolean;
   code?: number; // Ajout pour les erreurs MongoDB
+  type?: string; // Ajout pour les erreurs de parsing
 }
 
 // Classe pour créer des erreurs personnalisées
@@ -51,6 +52,12 @@ const handleJWTError = (): AppError =>
 
 const handleJWTExpiredError = (): AppError =>
   new AppError('Your token has expired! Please log in again.', 401);
+
+// Gestion des erreurs de parsing JSON
+const handleJsonParseError = (err: any): AppError => {
+  const message = 'Invalid JSON format';
+  return new AppError(message, 400);
+};
 
 // Envoyer les erreurs en développement
 const sendErrorDev = (err: CustomError, res: Response) => {
@@ -120,6 +127,8 @@ export const globalErrorHandler = (
     if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+    if (error.name === 'JsonParseError') error = handleJsonParseError(error);
+    if (error.type === 'entity.parse.failed') error = handleJsonParseError(error);
 
     sendErrorProd(error, res);
   }

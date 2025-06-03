@@ -40,7 +40,7 @@ const createClientSchema = Joi.object({
   phone: Joi.string()
     .optional()
     .trim()
-    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .pattern(/^\+?[\d\s-]{8,15}$/)
     .messages({
       'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
     }),
@@ -55,7 +55,11 @@ const createClientSchema = Joi.object({
   notes: Joi.string()
     .optional()
     .trim()
-    .allow('')
+    .allow(''),
+
+  createdBy: Joi.string()
+    .optional()
+    .trim()
 });
 
 // Schéma pour la mise à jour d'un client
@@ -91,7 +95,7 @@ const updateClientSchema = Joi.object({
   phone: Joi.string()
     .optional()
     .trim()
-    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .pattern(/^\+?[\d\s-]{8,15}$/)
     .messages({
       'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
     }),

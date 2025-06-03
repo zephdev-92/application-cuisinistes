@@ -8,9 +8,9 @@ import { validateProfileUpdate, validatePasswordUpdate } from '../validators/pro
 const router = express.Router();
 
 // Routes pour le profil
-router.get('/', protect, getProfile);
-router.put('/', protect, uploadImage.middleware, validateProfileUpdate, updateProfile);
-router.put('/password', protect, validatePasswordUpdate, updatePassword);
+router.get('/profile', protect, getProfile);
+router.put('/profile', protect, uploadImage.middleware, validateProfileUpdate, updateProfile);
+router.put('/profile/password', protect, validatePasswordUpdate, updatePassword);
 router.get('/images/:filename', (req, res) => {
     const filename = req.params.filename;
     res.sendFile(path.join(__dirname, '../uploads', filename));

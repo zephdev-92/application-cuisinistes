@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">21.42% </span>
+                <span class="strong">27.14% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/70</span>
+                <span class='fraction'>19/70</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.57% </span>
+                <span class="strong">8.92% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/56</span>
+                <span class='fraction'>5/56</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">21.73% </span>
+                <span class="strong">27.53% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>15/69</span>
+                <span class='fraction'>19/69</span>
             </div>
         
             
@@ -372,24 +372,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -407,11 +407,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -649,18 +649,18 @@ export class UserService {
     }
 &nbsp;
     // Validation métier pour les vendeurs
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (userData.role === UserRole.VENDEUR &amp;&amp; !userData.vendeurSpecialty) {</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (userData.role === UserRole.VENDEUR &amp;&amp; !userData.vendeurSpecialty) {
 <span class="cstat-no" title="statement not covered" >      throw new AppError('La spécialité est requise pour les vendeurs', 400);</span>
     }
 &nbsp;
     // Validation métier pour les prestataires
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (userData.role === UserRole.PRESTATAIRE &amp;&amp; userData.vendeurSpecialty) {</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (userData.role === UserRole.PRESTATAIRE &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >userData.vendeurSpecialty)</span> {
 <span class="cstat-no" title="statement not covered" >      throw new AppError('Les prestataires ne peuvent pas avoir de spécialité vendeur', 400);</span>
     }
 &nbsp;
     // Créer l'utilisateur
-    const user = <span class="cstat-no" title="statement not covered" >await User.create(userData);</span>
-<span class="cstat-no" title="statement not covered" >    return user;</span>
+    const user = await User.create(userData);
+    return user;
   }
 &nbsp;
   /**
@@ -883,7 +883,7 @@ export class UserService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-03T20:29:15.489Z
+                at 2025-06-03T20:59:16.244Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

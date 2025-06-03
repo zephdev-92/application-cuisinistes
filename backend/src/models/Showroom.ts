@@ -14,6 +14,7 @@ export interface IShowroom extends Document {
   website?: string;
   managers: mongoose.Types.ObjectId[];
   providers: mongoose.Types.ObjectId[];
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ const ShowroomSchema: Schema = new Schema({
   website: { type: String },
   managers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   providers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {

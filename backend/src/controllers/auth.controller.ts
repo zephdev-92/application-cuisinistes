@@ -37,7 +37,7 @@ export const register = catchAsync(async (req: Request, res: Response, next: Nex
     res.status(201).json({
       success: true,
       message: 'Inscription réussie',
-      ...result
+      data: result
     });
   } catch (error) {
     // Log d'audit de l'inscription échouée
@@ -78,7 +78,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
     res.status(200).json({
       success: true,
       message: 'Connexion réussie',
-      ...result
+      data: result
     });
   } catch (error) {
     // Log d'audit de connexion échouée
