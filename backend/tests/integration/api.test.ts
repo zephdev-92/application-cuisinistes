@@ -4,6 +4,7 @@ import { createTestApp } from '../helpers/testApp';
 import User from '../../src/models/User';
 import Showroom from '../../src/models/Showroom';
 import Client from '../../src/models/Client';
+import { auditLogger } from '../../src/utils/auditLogger';
 
 describe('API Integration Tests', () => {
   let app: Express;
@@ -33,6 +34,11 @@ describe('API Integration Tests', () => {
       });
 
     authToken = loginResponse.body.token;
+  });
+
+  // Nettoyer l'AuditLogger après tous les tests pour éviter que Jest reste ouvert
+  afterAll(() => {
+    auditLogger.shutdown();
   });
 
   describe('Health Check', () => {

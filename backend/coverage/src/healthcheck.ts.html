@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/routes/provider.routes.ts</title>
+    <title>Code coverage report for src/healthcheck.ts</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../prettify.css" />
-    <link rel="stylesheet" href="../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../../sort-arrow-sprite.png);
+            background-image: url(../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/routes</a> provider.routes.ts</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">src</a> healthcheck.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
@@ -89,8 +89,17 @@
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -102,45 +111,57 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// backend/src/routes/provider.routes.ts
-<span class="cstat-no" title="statement not covered" >import { Router } from 'express';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
-  getAllProviders,
-  searchProviders,
-  getProviderById,
-  createProvider,
-  updateProvider,
-  deleteProvider
-} from '../controllers/provider.controller';
-<span class="cstat-no" title="statement not covered" >import { protect, authorize } from '../middleware/auth.middleware';</span>
-<span class="cstat-no" title="statement not covered" >import { validateProviderUpdate } from '../validators/provider.validator';</span>
-<span class="cstat-no" title="statement not covered" >import { UserRole } from '../models/User';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">#!/usr/bin/env node
 &nbsp;
-const router = <span class="cstat-no" title="statement not covered" >Router();</span>
+<span class="cstat-no" title="statement not covered" >import http from 'http';</span>
 &nbsp;
-// Routes prestataires avec middleware d'authentification
-<span class="cstat-no" title="statement not covered" >router.get('/', protect, getAllProviders);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/search', protect, searchProviders);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/:id', protect, getProviderById);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/', protect, authorize(UserRole.ADMIN, UserRole.VENDEUR), createProvider);</span>
-<span class="cstat-no" title="statement not covered" >router.put('/:id', protect, authorize(UserRole.ADMIN, UserRole.VENDEUR), validateProviderUpdate, updateProvider);</span>
-<span class="cstat-no" title="statement not covered" >router.delete('/:id', protect, authorize(UserRole.ADMIN, UserRole.VENDEUR), deleteProvider);</span>
+const options = <span class="cstat-no" title="statement not covered" >{</span>
+  hostname: 'localhost',
+  port: process.env.PORT || 5000,
+  path: '/health',
+  method: 'GET',
+  timeout: 2000
+};
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default router;</span>
+const healthCheck = <span class="cstat-no" title="statement not covered" >http.request(options, <span class="fstat-no" title="function not covered" >(r</span>es) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  console.log(`Healthcheck status: ${res.statusCode}`);</span>
+<span class="cstat-no" title="statement not covered" >  if (res.statusCode === 200) {</span>
+<span class="cstat-no" title="statement not covered" >    process.exit(0);</span>
+  } else {
+<span class="cstat-no" title="statement not covered" >    process.exit(1);</span>
+  }
+});
 &nbsp;
+<span class="cstat-no" title="statement not covered" >healthCheck.on('error', <span class="fstat-no" title="function not covered" >(e</span>rr) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  console.error('Healthcheck failed:', err.message);</span>
+<span class="cstat-no" title="statement not covered" >  process.exit(1);</span>
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >healthCheck.on('timeout', <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  console.error('Healthcheck timeout');</span>
+<span class="cstat-no" title="statement not covered" >  healthCheck.destroy();</span>
+<span class="cstat-no" title="statement not covered" >  process.exit(1);</span>
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >healthCheck.end();</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -148,16 +169,16 @@ const router = <span class="cstat-no" title="statement not covered" >Router();</
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-03T20:29:14.927Z
+                at 2025-06-03T20:29:15.489Z
             </div>
-        <script src="../../prettify.js"></script>
+        <script src="../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../../sorter.js"></script>
-        <script src="../../block-navigation.js"></script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
     </body>
 </html>
     

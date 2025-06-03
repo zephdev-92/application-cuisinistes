@@ -161,10 +161,12 @@ class AuditLogger {
 
     this.rotateLogFile();
 
-    // Rotation automatique chaque jour
-    this.logRotationTimer = setInterval(() => {
-      this.rotateLogFile();
-    }, 24 * 60 * 60 * 1000); // 24 heures
+    // Rotation automatique chaque jour (sauf en mode test)
+    if (process.env.NODE_ENV !== 'test') {
+      this.logRotationTimer = setInterval(() => {
+        this.rotateLogFile();
+      }, 24 * 60 * 60 * 1000); // 24 heures
+    }
   }
 
   private rotateLogFile(): void {
