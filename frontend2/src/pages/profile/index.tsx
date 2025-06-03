@@ -1,62 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { NextPage } from 'next';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useAuth } from '@/contexts/auth.context';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { NextPage } from 'next';
+import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
-import ProfileForm, { ProfileFormData } from '@/components/profile/ProfileForm';
-import PasswordForm, { PasswordFormData } from '@/components/profile/PasswordForm';
-import { Alert } from '@/components/ui/Alert';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import ProfileForm, { ProfileFormData } from '@/components/forms/ProfileForm';
+import PasswordForm, { PasswordFormData } from '@/components/forms/PasswordForm';
+import Alert from '@/components/ui/Alert';
 
 type PageWithLayout = NextPage<Record<string, unknown>> & {
   getLayout?: (page: React.ReactElement) => React.ReactNode;
-};
-
-// Type pour les objets comparables
-type ComparableObject = {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  companyName?: string;
-  description?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    postalCode?: string;
-    country?: string;
-  };
-  specialties?: string[];
-  companyLogo?: string;
 };
 
 // Fonction utilitaire pour s'assurer que l'URL de l'image est bien formée
 const formatImageUrl = (imagePath: string | undefined): string | undefined => {
   if (!imagePath) return undefined;
 
-  // Vérifier si l'URL est déjà complète
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+  // Si l'image commence déjà par http, la retourner telle quelle
+  if (imagePath.startsWith('http')) {
     return imagePath;
   }
 
-  // Ajouter un slash au début si nécessaire
-  const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `http://localhost:5000${path}`;
-};
-
-// Fonction utilitaire pour vérifier si deux objets sont égaux
-const isEqual = (obj1: ComparableObject | null, obj2: ComparableObject | null): boolean => {
-  if (!obj1 || !obj2) return obj1 === obj2;
-
-  const keys1 = Object.keys(obj1);
-  const keys2 = Object.keys(obj2);
-
-  if (keys1.length !== keys2.length) return false;
-
-  for (const key of keys1) {
-    if (obj1[key as keyof ComparableObject] !== obj2[key as keyof ComparableObject]) return false;
-  }
-
-  return true;
+  // Sinon, construire l'URL complète
+  return `${baseUrl}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
 };
 
 const ProfilePage: PageWithLayout = () => {
@@ -64,47 +31,10 @@ const ProfilePage: PageWithLayout = () => {
   const { loading, error, updateProfile, updatePassword, fetchProfile, profileLoaded } = useProfile();
   const [success, setSuccess] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<Partial<ProfileFormData>>({});
-  const [activeTab, setActiveTab] = useState('profile'); // État pour gérer les onglets
-  const isInitialMount = useRef(true);
-  const prevUserRef = useRef(user);
-  const prevProfileLoadedRef = useRef(profileLoaded);
-
-  // Charger les données du profil une seule fois au montage du composant ou quand user/profileLoaded change réellement
-  useEffect(() => {
-    // Éviter de re-exécuter cet effet lors du premier rendu
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-
-      // Charger le profil uniquement si ce n'est pas déjà fait
-      if (!profileLoaded) {
-        loadProfileData();
-      } else {
-        // Si déjà chargé, utiliser les données de l'utilisateur existant
-        updateProfileDataFromUser();
-      }
-      return;
-    }
-
-    // Vérifier si user ou profileLoaded ont réellement changé
-    const userChanged = !isEqual(user, prevUserRef.current);
-    const profileLoadedChanged = profileLoaded !== prevProfileLoadedRef.current;
-
-    // Mettre à jour les références
-    prevUserRef.current = user;
-    prevProfileLoadedRef.current = profileLoaded;
-
-    // Ne continuer que si quelque chose a réellement changé
-    if (userChanged || profileLoadedChanged) {
-      if (!profileLoaded) {
-        loadProfileData();
-      } else {
-        updateProfileDataFromUser();
-      }
-    }
-  }, [user, profileLoaded]);
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
 
   // Fonction pour charger les données du profil
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     try {
       const data = await fetchProfile();
       if (data) {
@@ -113,10 +43,10 @@ const ProfilePage: PageWithLayout = () => {
     } catch (err) {
       console.error('Erreur lors du chargement du profil:', err);
     }
-  };
+  }, [fetchProfile, updateProfileDataFromResponse]);
 
   // Fonction pour mettre à jour les données du profil à partir de la réponse API
-  const updateProfileDataFromResponse = (data: ProfileFormData) => {
+  const updateProfileDataFromResponse = useCallback((data: ProfileFormData) => {
     setProfileData({
       firstName: data.firstName || '',
       lastName: data.lastName || '',
@@ -133,10 +63,10 @@ const ProfilePage: PageWithLayout = () => {
       specialties: data.specialties || [],
       companyLogo: typeof data.companyLogo === 'string' ? formatImageUrl(data.companyLogo) : undefined
     });
-  };
+  }, []);
 
   // Fonction pour mettre à jour les données du profil à partir de l'utilisateur en contexte
-  const updateProfileDataFromUser = () => {
+  const updateProfileDataFromUser = useCallback(() => {
     if (!user) return;
 
     setProfileData({
@@ -155,7 +85,16 @@ const ProfilePage: PageWithLayout = () => {
       specialties: user.specialties || [],
       companyLogo: typeof user.companyLogo === 'string' ? formatImageUrl(user.companyLogo) : undefined
     });
-  };
+  }, [user]);
+
+  // Charger les données du profil depuis l'API si nécessaire
+  useEffect(() => {
+    if (user && !profileLoaded) {
+      loadProfileData();
+    } else {
+      updateProfileDataFromUser();
+    }
+  }, [user, profileLoaded, loadProfileData, updateProfileDataFromUser]);
 
   // Gestion de la soumission du formulaire de profil
   const handleProfileSubmit = async (formData: ProfileFormData) => {
@@ -181,29 +120,28 @@ const ProfilePage: PageWithLayout = () => {
   };
 
   // Gestion de la soumission du formulaire de mot de passe
-// Gestion de la soumission du formulaire de mot de passe
-const handlePasswordSubmit = async (data: PasswordFormData) => {
-  try {
-    const result = await updatePassword(data);
+  const handlePasswordSubmit = async (data: PasswordFormData) => {
+    try {
+      const result = await updatePassword(data);
 
-    // Si on arrive ici, c'est que la mise à jour a réussi
-    setSuccess('Mot de passe mis à jour avec succès');
+      // Si on arrive ici, c'est que la mise à jour a réussi
+      setSuccess('Mot de passe mis à jour avec succès');
 
-    // Afficher le message de succès pendant 2 secondes puis déconnecter
-    setTimeout(() => {
-      // Rediriger vers la page de connexion
-      window.location.href = '/login';
-    }, 2000);
+      // Afficher le message de succès pendant 2 secondes puis déconnecter
+      setTimeout(() => {
+        // Rediriger vers la page de connexion
+        window.location.href = '/login';
+      }, 2000);
 
-    return result;
-  } catch (err) {
-    // En cas d'erreur, on reste sur la page et on affiche l'erreur
-    // L'erreur est déjà gérée par le hook useProfile qui met à jour l'état error
-    console.error('Erreur lors de la mise à jour du mot de passe:', err);
-    // On ne redirige pas
-    return null;
-  }
-};
+      return result;
+    } catch (err) {
+      // En cas d'erreur, on reste sur la page et on affiche l'erreur
+      // L'erreur est déjà gérée par le hook useProfile qui met à jour l'état error
+      console.error('Erreur lors de la mise à jour du mot de passe:', err);
+      // On ne redirige pas
+      return null;
+    }
+  };
 
   return (
     <div className="py-6">
@@ -218,7 +156,7 @@ const handlePasswordSubmit = async (data: PasswordFormData) => {
               name="tabs"
               className="block w-full rounded-md border-gray-300 py-2 pr-10 pl-3 text-base focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
               value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
+              onChange={(e) => setActiveTab(e.target.value as 'profile' | 'password')}
             >
               <option value="profile">Informations personnelles</option>
               <option value="password">Mot de passe</option>

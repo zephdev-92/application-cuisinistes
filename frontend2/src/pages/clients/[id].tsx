@@ -95,7 +95,7 @@ const ClientDetailPage: PageWithLayout = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, reset]);
+  }, [id, reset, client, getClientById]);
 
 
   // Mettre à jour le client

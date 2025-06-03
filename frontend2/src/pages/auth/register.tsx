@@ -64,18 +64,20 @@ export default function Register() {
     setApiError('');
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, terms, ...registerData } = data;
       await authService.register(registerData);
       router.push('/auth/login?message=registration-success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur lors de l\'inscription:', error);
 
-      if (error?.response?.data) {
-        const errorData = error.response.data as ApiErrorResponse;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: ApiErrorResponse } };
+        const errorData = axiosError.response?.data;
 
-        if (errorData.errors && errorData.errors.length > 0) {
+        if (errorData?.errors && errorData.errors.length > 0) {
           setApiError(errorData.errors.map(e => e.msg).join(', '));
-        } else if (errorData.error) {
+        } else if (errorData?.error) {
           setApiError(errorData.error);
         } else {
           setApiError('Une erreur est survenue lors de l\'inscription');

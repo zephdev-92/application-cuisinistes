@@ -144,7 +144,7 @@ const ProviderSearch: React.FC<ProviderSearchProps> = ({ onSelect, onCancel }) =
           </ul>
         ) : searchTerm.trim().length >= 2 ? (
           <div className="py-6 text-center text-gray-500">
-            Aucun prestataire trouvé pour "{searchTerm}"
+            Aucun prestataire trouvé pour &ldquo;{searchTerm}&rdquo;
           </div>
         ) : searchTerm.trim().length === 1 ? (
           <div className="py-6 text-center text-gray-500">

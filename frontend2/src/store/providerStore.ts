@@ -43,10 +43,11 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         filteredProviders: providers,
         isLoading: false
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur lors du chargement des prestataires:', error);
+      const message = error instanceof Error ? error.message : 'Impossible de charger les prestataires. Veuillez réessayer.';
       set({
-        error: error.message || 'Impossible de charger les prestataires. Veuillez réessayer.',
+        error: message,
         isLoading: false
       });
     }
@@ -70,10 +71,11 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         filteredProviders: providers,
         isLoading: false
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur lors de la recherche de prestataires:', error);
+      const message = error instanceof Error ? error.message : 'Impossible de rechercher des prestataires. Veuillez réessayer.';
       set({
-        error: error.message || 'Impossible de rechercher des prestataires. Veuillez réessayer.',
+        error: message,
         isLoading: false
       });
     }
@@ -88,10 +90,11 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         selectedProvider: provider,
         isLoading: false
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Erreur lors de la récupération du prestataire ${id}:`, error);
+      const message = error instanceof Error ? error.message : 'Impossible de récupérer les détails du prestataire. Veuillez réessayer.';
       set({
-        error: error.message || 'Impossible de récupérer les détails du prestataire. Veuillez réessayer.',
+        error: message,
         isLoading: false
       });
     }
@@ -111,9 +114,9 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       }));
 
       return newProvider;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur lors de la création du prestataire:', error);
-      const errorMessage = error.message || 'Impossible de créer le prestataire. Veuillez réessayer.';
+      const errorMessage = error instanceof Error ? error.message : 'Impossible de créer le prestataire. Veuillez réessayer.';
 
       set({ error: errorMessage, isLoading: false });
       throw new Error(errorMessage);
@@ -138,9 +141,9 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       }));
 
       return updatedProvider;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Erreur lors de la mise à jour du prestataire ${id}:`, error);
-      const errorMessage = error.message || 'Impossible de mettre à jour le prestataire. Veuillez réessayer.';
+      const errorMessage = error instanceof Error ? error.message : 'Impossible de mettre à jour le prestataire. Veuillez réessayer.';
 
       set({ error: errorMessage, isLoading: false });
       throw new Error(errorMessage);
@@ -167,10 +170,11 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
           isLoading: false
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Erreur lors de la suppression du prestataire ${id}:`, error);
+      const message = error instanceof Error ? error.message : 'Impossible de supprimer le prestataire. Veuillez réessayer.';
       set({
-        error: error.message || 'Impossible de supprimer le prestataire. Veuillez réessayer.',
+        error: message,
         isLoading: false
       });
     }

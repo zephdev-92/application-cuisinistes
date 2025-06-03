@@ -401,8 +401,8 @@ const ProviderForm: React.FC<ProviderFormProps> = ({ provider, isEdit = false })
         <div className="mt-6 bg-blue-50 p-4 rounded-md">
           <h3 className="text-lg font-medium text-blue-800 mb-2">Information</h3>
           <p className="text-blue-700">
-            Le prestataire recevra un email l'invitant à finaliser son inscription et à définir son mot de passe.
-            Aucun mot de passe n'est requis lors de la création.
+            Le prestataire recevra un email l&apos;invitant à finaliser son inscription et à définir son mot de passe.
+            Aucun mot de passe n&apos;est requis lors de la création.
           </p>
         </div>
       )}

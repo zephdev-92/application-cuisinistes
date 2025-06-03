@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX } from 'react-icons/fi';
 import { useProviderStore } from '../../store/providerStore';
 
 const ProviderList: React.FC = () => {
-  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
 
   const {
-    providers,
     filteredProviders,
     isLoading,
     error,

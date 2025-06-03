@@ -23,10 +23,11 @@ export const useShowroomStore = create<ShowroomState>((set) => ({
     try {
       const showrooms = await ShowroomService.getAll();
       set({ showrooms, isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur lors du chargement des showrooms:', error);
+      const message = error instanceof Error ? error.message : 'Impossible de charger les showrooms. Veuillez réessayer.';
       set({
-        error: error.message || 'Impossible de charger les showrooms. Veuillez réessayer.',
+        error: message,
         isLoading: false
       });
     }
