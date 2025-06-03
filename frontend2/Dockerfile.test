@@ -1,0 +1,29 @@
+# frontend2/Dockerfile.test - Version simplifiée
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY package.json package-lock.json* ./
+
+# Installer les dépendances
+RUN npm ci
+
+# Copier le code source
+COPY . .
+
+# Désactiver la télémétrie Next.js
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Build de l'application
+RUN npm run build
+
+# Variables d'environnement
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Exposer le port
+EXPOSE 3000
+
+# Commande de démarrage
+CMD ["npm", "start"]

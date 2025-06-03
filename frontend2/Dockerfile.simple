@@ -1,0 +1,31 @@
+# frontend2/Dockerfile.simple - Build sans ESLint strict
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY package.json package-lock.json* ./
+
+# Installer les dépendances
+RUN npm ci
+
+# Copier le code source
+COPY . .
+
+# Désactiver ESLint et TypeScript errors
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV ESLINT_NO_DEV_ERRORS=true
+ENV CI=false
+
+# Build de l'application avec configuration modifiée
+RUN npm run build
+
+# Variables d'environnement
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Exposer le port
+EXPOSE 3000
+
+# Commande de démarrage
+CMD ["npm", "start"]

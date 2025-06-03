@@ -28,7 +28,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({ provider, isEdit = false })
     showrooms: []
   });
 
-  const [passwordVisible, setPasswordVisible] = useState(false); // Gardé pour les futures fonctionnalités
   const [customSpecialty, setCustomSpecialty] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState('');

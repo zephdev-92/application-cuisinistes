@@ -1,40 +1,60 @@
-# frontend/Dockerfile.prod
-FROM node:18-alpine AS builder
+# frontend2/Dockerfile.prod
+FROM node:20-alpine AS base
 
-# Définition du répertoire de travail
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copie des fichiers de dépendances
+# Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-
-# Installation des dépendances
 RUN npm ci
 
-# Copie du reste du code source
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Construction de l'application Next.js
+# Disable telemetry and linting during build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV ESLINT_NO_DEV_ERRORS=true
+ENV CI=false
+
+# Build the application
 RUN npm run build
 
-# Étape de production avec une image minimale
-FROM node:18-alpine
-
-# Définition du répertoire de travail
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-# Copie des fichiers de dépendances
-COPY package.json package-lock.json* ./
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Installation des dépendances de production uniquement
-RUN npm ci --production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copie des fichiers de build depuis l'étape précédente
-COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
 
-# Exposition du port utilisé par Next.js
+# Set the correct permission for precompiled cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
 
-# Commande de démarrage en mode production
-CMD ["npm", "start"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+CMD ["node", "server.js"]

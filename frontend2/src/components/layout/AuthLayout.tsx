@@ -1,6 +1,5 @@
 import React, { ReactNode } from 'react';
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
 
 interface AuthLayoutProps {
@@ -42,7 +41,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title = 'Authentifica
               </div>
               <div className="flex space-x-6">
                 <Link href="/terms" className="text-sm text-gray-500 hover:text-gray-900">
-                  Conditions d'utilisation
+                  Conditions d&apos;utilisation
                 </Link>
                 <Link href="/privacy" className="text-sm text-gray-500 hover:text-gray-900">
                   Politique de confidentialité
