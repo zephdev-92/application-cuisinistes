@@ -47,9 +47,7 @@ export const authService = {
   },
 
   register: async (userData: RegisterData) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { confirmPassword, terms, ...registerData } = userData as RegisterData;
-    const response = await apiClient.post('/auth/register', registerData);
+    const response = await apiClient.post('/auth/register', userData);
 
     if (response.data && response.data.token) {
       // Stocker le token dans localStorage pour la persistance

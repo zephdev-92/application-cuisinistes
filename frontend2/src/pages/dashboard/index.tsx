@@ -76,7 +76,7 @@ const DashboardPage: NextPageWithLayout = () => {
 
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {/* Cartes différentes selon le rôle de l'utilisateur */}
-            {user?.role === UserRole.CUISINISTE && (
+            {user?.role === UserRole.VENDEUR && (
               <>
                 <DashboardCard
                   title="Clients"
@@ -218,27 +218,6 @@ const DashboardPage: NextPageWithLayout = () => {
 
             {/* Cartes communes à tous les rôles */}
             <DashboardCard
-              title="Calendrier"
-              description="Voir votre agenda"
-              icon={
-                <svg
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              }
-              link="/calendar"
-            />
-
-            <DashboardCard
               title="Profil"
               description="Gérer votre profil"
               icon={
@@ -258,6 +237,75 @@ const DashboardPage: NextPageWithLayout = () => {
               }
               link="/profile"
             />
+
+            <DashboardCard
+              title="Calendrier"
+              description="Voir le planning"
+              icon={
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              }
+              link="/calendar"
+            />
+
+            {user?.role === UserRole.ADMIN && (
+              <>
+                <DashboardCard
+                  title="Utilisateurs"
+                  description="Gérer tous les utilisateurs"
+                  icon={
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      />
+                    </svg>
+                  }
+                  link="/admin/users"
+                  count={0}
+                />
+
+                <DashboardCard
+                  title="Statistiques"
+                  description="Voir les analyses"
+                  icon={
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                  }
+                  link="/admin/analytics"
+                  count={0}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

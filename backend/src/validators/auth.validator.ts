@@ -1,85 +1,150 @@
 import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import Joi from 'joi';
+import { UserRole, VendeurSpecialty } from '../models/User';
 
-import { UserRole } from '../models/User';
-
-// Validation pour l'inscription
-export const validateRegister = [
-  body('firstName')
-    .notEmpty()
-    .withMessage('Le prénom est requis')
+// Schéma pour l'inscription
+const registerSchema = Joi.object({
+  firstName: Joi.string()
+    .required()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le prénom doit contenir entre 2 et 50 caractères'),
+    .min(2)
+    .max(50)
+    .messages({
+      'string.empty': 'Le prénom est requis',
+      'string.min': 'Le prénom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le prénom ne doit pas dépasser {#limit} caractères',
+      'any.required': 'Le prénom est requis'
+    }),
 
-  body('lastName')
-    .notEmpty()
-    .withMessage('Le nom est requis')
+  lastName: Joi.string()
+    .required()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le nom doit contenir entre 2 et 50 caractères'),
+    .min(2)
+    .max(50)
+    .messages({
+      'string.empty': 'Le nom est requis',
+      'string.min': 'Le nom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le nom ne doit pas dépasser {#limit} caractères',
+      'any.required': 'Le nom est requis'
+    }),
 
-  body('email')
-    .notEmpty()
-    .withMessage('L\'email est requis')
+  email: Joi.string()
+    .required()
     .trim()
-    .isEmail()
-    .withMessage('Veuillez fournir un email valide')
-    .normalizeEmail(),
+    .email()
+    .messages({
+      'string.empty': 'L\'email est requis',
+      'string.email': 'Veuillez fournir un email valide',
+      'any.required': 'L\'email est requis'
+    }),
 
-  body('password')
-    .notEmpty()
-    .withMessage('Le mot de passe est requis')
-    .isLength({ min: 6 })
-    .withMessage('Le mot de passe doit contenir au moins 6 caractères'),
+  password: Joi.string()
+    .required()
+    .min(6)
+    .messages({
+      'string.empty': 'Le mot de passe est requis',
+      'string.min': 'Le mot de passe doit contenir au moins {#limit} caractères',
+      'any.required': 'Le mot de passe est requis'
+    }),
 
-  body('role')
+  role: Joi.string()
+    .valid(...Object.values(UserRole))
     .optional()
-    .isIn(Object.values(UserRole))
-    .withMessage('Le rôle doit être cuisiniste, prestataire ou admin'),
+    .messages({
+      'any.only': 'Le rôle doit être vendeur, prestataire ou admin'
+    }),
 
-  body('phone')
+  vendeurSpecialty: Joi.when('role', {
+    is: UserRole.VENDEUR,
+    then: Joi.string()
+      .valid(...Object.values(VendeurSpecialty))
+      .required()
+      .messages({
+        'any.only': 'Veuillez choisir une spécialité de vendeur valide',
+        'any.required': 'La spécialité est requise pour les vendeurs'
+      }),
+    otherwise: Joi.forbidden()
+  }),
+
+  phone: Joi.string()
     .optional()
     .trim()
-    .matches(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
-    .withMessage('Veuillez fournir un numéro de téléphone valide'),
+    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .messages({
+      'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
+    })
+});
 
-  // Middleware pour vérifier les résultats de validation
-  (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    next();
-  }
-];
-
-// Validation pour la connexion
-export const validateLogin = [
-  body('email')
-    .notEmpty()
-    .withMessage('L\'email est requis')
+// Schéma pour la connexion
+const loginSchema = Joi.object({
+  email: Joi.string()
+    .required()
     .trim()
-    .isEmail()
-    .withMessage('Veuillez fournir un email valide')
-    .normalizeEmail(),
+    .email()
+    .messages({
+      'string.empty': 'L\'email est requis',
+      'string.email': 'Veuillez fournir un email valide',
+      'any.required': 'L\'email est requis'
+    }),
 
-  body('password')
-    .notEmpty()
-    .withMessage('Le mot de passe est requis'),
+  password: Joi.string()
+    .required()
+    .messages({
+      'string.empty': 'Le mot de passe est requis',
+      'any.required': 'Le mot de passe est requis'
+    })
+});
 
-  // Middleware pour vérifier les résultats de validation
-  (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    next();
+// Middleware de validation pour l'inscription
+export const validateRegister = (req: Request, res: Response, next: NextFunction): void => {
+  const { error, value } = registerSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    // Formater les erreurs pour correspondre à la structure attendue
+    const formattedErrors = error.details.map((err) => ({
+      msg: err.message,
+      param: err.path.join('.'),
+      location: 'body'
+    }));
+
+    res.status(400).json({
+      success: false,
+      errors: formattedErrors
+    });
+    return;
   }
-];
+
+  // Mettre à jour les données validées et nettoyées
+  req.body = value;
+  next();
+};
+
+// Middleware de validation pour la connexion
+export const validateLogin = (req: Request, res: Response, next: NextFunction): void => {
+  const { error, value } = loginSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    // Formater les erreurs pour correspondre à la structure attendue
+    const formattedErrors = error.details.map((err) => ({
+      msg: err.message,
+      param: err.path.join('.'),
+      location: 'body'
+    }));
+
+    res.status(400).json({
+      success: false,
+      errors: formattedErrors
+    });
+    return;
+  }
+
+  // Mettre à jour les données validées et nettoyées
+  req.body = value;
+  next();
+};

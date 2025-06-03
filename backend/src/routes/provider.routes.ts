@@ -18,9 +18,9 @@ const router = Router();
 router.get('/', protect, getAllProviders);
 router.get('/search', protect, searchProviders);
 router.get('/:id', protect, getProviderById);
-router.post('/', protect, authorize(UserRole.ADMIN, UserRole.CUISINISTE), createProvider);
-router.put('/:id', protect, authorize(UserRole.ADMIN, UserRole.CUISINISTE), validateProviderUpdate, updateProvider);
-router.delete('/:id', protect, authorize(UserRole.ADMIN), deleteProvider);
+router.post('/', protect, authorize(UserRole.ADMIN, UserRole.VENDEUR), createProvider);
+router.put('/:id', protect, authorize(UserRole.ADMIN, UserRole.VENDEUR), validateProviderUpdate, updateProvider);
+router.delete('/:id', protect, authorize(UserRole.ADMIN, UserRole.VENDEUR), deleteProvider);
 
 export default router;
 

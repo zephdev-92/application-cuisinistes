@@ -2,9 +2,17 @@ import { Schema, model, Document, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export enum UserRole {
-  CUISINISTE = 'cuisiniste',
+  VENDEUR = 'vendeur',
   PRESTATAIRE = 'prestataire',
   ADMIN = 'admin'
+}
+
+// Enum pour les sous-métiers des vendeurs
+export enum VendeurSpecialty {
+  CUISINISTE = 'cuisiniste',
+  // Autres métiers à ajouter plus tard
+  MOBILIER = 'mobilier',
+  ELECTROMENAGER = 'electromenager'
 }
 
 export interface IUser extends Document {
@@ -16,6 +24,7 @@ export interface IUser extends Document {
   phone?: string;
   role: UserRole;
   specialties?: string[];
+  vendeurSpecialty?: VendeurSpecialty; // Nouveau champ pour les sous-métiers des vendeurs
   showrooms?: Schema.Types.ObjectId[];
   companyName?: string;
   companyLogo?: string;
@@ -74,6 +83,13 @@ const UserSchema = new Schema<IUser>(
     specialties: {
       type: [String],
       default: []
+    },
+    vendeurSpecialty: {
+      type: String,
+      enum: Object.values(VendeurSpecialty),
+      required: function(this: IUser) {
+        return this.role === UserRole.VENDEUR;
+      }
     },
     showrooms: [{
       type: Schema.Types.ObjectId,

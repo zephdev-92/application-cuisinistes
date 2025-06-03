@@ -1,94 +1,161 @@
 import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import Joi from 'joi';
+import { AuthRequest } from '../types/express';
+import { VendeurSpecialty } from '../models/User';
 
-// Validation pour la mise à jour du profil
-export const validateProfileUpdate = [
-  body('firstName')
+// Schéma pour la mise à jour du profil
+const updateProfileSchema = Joi.object({
+  firstName: Joi.string()
     .optional()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le prénom doit contenir entre 2 et 50 caractères'),
+    .min(2)
+    .max(50)
+    .messages({
+      'string.min': 'Le prénom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le prénom ne doit pas dépasser {#limit} caractères'
+    }),
 
-  body('lastName')
+  lastName: Joi.string()
     .optional()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le nom doit contenir entre 2 et 50 caractères'),
+    .min(2)
+    .max(50)
+    .messages({
+      'string.min': 'Le nom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le nom ne doit pas dépasser {#limit} caractères'
+    }),
 
-  body('email')
+  email: Joi.string()
     .optional()
     .trim()
-    .isEmail()
-    .withMessage('Veuillez fournir un email valide')
-    .normalizeEmail(),
+    .email()
+    .messages({
+      'string.email': 'Veuillez fournir un email valide'
+    }),
 
-  body('phone')
+  phone: Joi.string()
     .optional()
     .trim()
-    .matches(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
-    .withMessage('Veuillez fournir un numéro de téléphone valide'),
+    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .messages({
+      'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
+    }),
 
-  body('companyName')
+  companyName: Joi.string()
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Le nom de l\'entreprise doit contenir entre 2 et 100 caractères'),
+    .min(2)
+    .max(100)
+    .messages({
+      'string.min': 'Le nom de l\'entreprise doit contenir au moins {#limit} caractères',
+      'string.max': 'Le nom de l\'entreprise ne doit pas dépasser {#limit} caractères'
+    }),
 
-  body('description')
+  description: Joi.string()
     .optional()
-    .trim(),
+    .trim()
+    .allow(''),
 
-  body('specialties')
-    .optional()  // Le rendre entièrement optionnel
-    .custom((value, { req }) => {
-      // Si c'est un cuisiniste, ignorer la validation
-      if (req.user && req.user.role === 'cuisiniste') {
-        return true;
-      }
-      // Sinon, vérifier que c'est un tableau
-      return Array.isArray(value);
+  vendeurSpecialty: Joi.when('$userRole', {
+    is: 'vendeur',
+    then: Joi.string()
+      .valid(...Object.values(VendeurSpecialty))
+      .optional()
+      .messages({
+        'any.only': 'Veuillez choisir une spécialité de vendeur valide'
+      }),
+    otherwise: Joi.forbidden()
+  }),
+
+  specialties: Joi.when('$userRole', {
+    is: 'vendeur',
+    then: Joi.any().optional(),
+    otherwise: Joi.array()
+      .items(Joi.string().trim())
+      .optional()
+      .messages({
+        'array.base': 'Les spécialités doivent être un tableau'
+      })
+  }),
+
+  address: Joi.object({
+    street: Joi.string().optional().trim().allow(''),
+    city: Joi.string().optional().trim().allow(''),
+    postalCode: Joi.string().optional().trim().allow(''),
+    country: Joi.string().optional().trim().allow('')
+  }).optional()
+});
+
+// Schéma pour la mise à jour du mot de passe
+const updatePasswordSchema = Joi.object({
+  currentPassword: Joi.string()
+    .required()
+    .messages({
+      'string.empty': 'Le mot de passe actuel est requis',
+      'any.required': 'Le mot de passe actuel est requis'
+    }),
+
+  newPassword: Joi.string()
+    .required()
+    .min(6)
+    .messages({
+      'string.empty': 'Le nouveau mot de passe est requis',
+      'string.min': 'Le nouveau mot de passe doit contenir au moins {#limit} caractères',
+      'any.required': 'Le nouveau mot de passe est requis'
     })
-    .withMessage('Les spécialités doivent être un tableau'),
+});
 
-  body('street').optional().trim(),
-  body('city').optional().trim(),
-  body('postalCode').optional().trim(),
-  body('country').optional().trim(),
+// Middleware de validation pour la mise à jour du profil
+export const validateProfileUpdate = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  const { error, value } = updateProfileSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true,
+    context: { userRole: req.user?.role }
+  });
 
-  // Middleware pour vérifier les résultats de validation
-  (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    next();
+  if (error) {
+    // Formater les erreurs pour correspondre à la structure attendue
+    const formattedErrors = error.details.map((err) => ({
+      msg: err.message,
+      param: err.path.join('.'),
+      location: 'body'
+    }));
+
+    res.status(400).json({
+      success: false,
+      errors: formattedErrors
+    });
+    return;
   }
-];
 
-// Validation pour la mise à jour du mot de passe
-export const validatePasswordUpdate = [
-  body('currentPassword')
-    .notEmpty()
-    .withMessage('Le mot de passe actuel est requis'),
+  // Mettre à jour les données validées et nettoyées
+  req.body = value;
+  next();
+};
 
-  body('newPassword')
-    .notEmpty()
-    .withMessage('Le nouveau mot de passe est requis')
-    .isLength({ min: 6 })
-    .withMessage('Le nouveau mot de passe doit contenir au moins 6 caractères'),
+// Middleware de validation pour la mise à jour du mot de passe
+export const validatePasswordUpdate = (req: Request, res: Response, next: NextFunction): void => {
+  const { error, value } = updatePasswordSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
 
-  // Middleware pour vérifier les résultats de validation
-  (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    next();
+  if (error) {
+    // Formater les erreurs pour correspondre à la structure attendue
+    const formattedErrors = error.details.map((err) => ({
+      msg: err.message,
+      param: err.path.join('.'),
+      location: 'body'
+    }));
+
+    res.status(400).json({
+      success: false,
+      errors: formattedErrors
+    });
+    return;
   }
-];
+
+  // Mettre à jour les données validées et nettoyées
+  req.body = value;
+  next();
+};

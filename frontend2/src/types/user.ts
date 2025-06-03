@@ -4,22 +4,32 @@
  * Énumération des rôles d'utilisateur disponibles dans l'application
  */
 export enum UserRole {
-  CUISINISTE = 'cuisiniste',
-  PRESTATAIRE = 'prestataire',
   ADMIN = 'admin',
+  PRESTATAIRE = 'prestataire',
+  VENDEUR = 'vendeur'
+}
+
+/**
+ * Enum pour les sous-métiers des vendeurs
+ */
+export enum VendeurSpecialty {
+  CUISINISTE = 'cuisiniste',
+  MOBILIER = 'mobilier',
+  ELECTROMENAGER = 'electromenager'
 }
 
 /**
  * Interface représentant un utilisateur dans l'application
  */
 export interface User {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
   role: UserRole;
   specialties?: string[];
+  vendeurSpecialty?: VendeurSpecialty;
   showrooms?: string[];
   companyName?: string;
   companyLogo?: string;
@@ -32,8 +42,8 @@ export interface User {
   };
   profileCompleted: boolean;
   active: boolean;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -52,10 +62,9 @@ export interface RegisterData {
   lastName: string;
   email: string;
   password: string;
-  confirmPassword?: string;
   role?: UserRole;
+  vendeurSpecialty?: VendeurSpecialty;
   phone?: string;
-  terms?: boolean;
 }
 
 /**

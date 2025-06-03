@@ -8,13 +8,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
     "multer": "^1.4.5-lts.1",
-    "prisma": "^6.5.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },
@@ -32,6 +30,8 @@
     "test": "jest",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node src/scripts/seed.ts",
+    "seed:test": "ts-node src/scripts/test-seed.ts",
+    "migrate:cuisiniste-to-vendeur": "ts-node src/scripts/migrate-cuisiniste-to-vendeur.ts"
   }
 }

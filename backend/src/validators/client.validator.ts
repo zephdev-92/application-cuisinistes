@@ -1,125 +1,164 @@
 import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import Joi from 'joi';
 
-// Validation pour la création d'un client
-export const validateClientCreate = [
-  body('firstName')
-    .notEmpty()
-    .withMessage('Le prénom est requis')
+// Schéma pour la création d'un client
+const createClientSchema = Joi.object({
+  firstName: Joi.string()
+    .required()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le prénom doit contenir entre 2 et 50 caractères'),
+    .min(2)
+    .max(50)
+    .messages({
+      'string.empty': 'Le prénom est requis',
+      'string.min': 'Le prénom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le prénom ne doit pas dépasser {#limit} caractères',
+      'any.required': 'Le prénom est requis'
+    }),
 
-  body('lastName')
-    .notEmpty()
-    .withMessage('Le nom est requis')
+  lastName: Joi.string()
+    .required()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le nom doit contenir entre 2 et 50 caractères'),
+    .min(2)
+    .max(50)
+    .messages({
+      'string.empty': 'Le nom est requis',
+      'string.min': 'Le nom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le nom ne doit pas dépasser {#limit} caractères',
+      'any.required': 'Le nom est requis'
+    }),
 
-  body('email')
-    .notEmpty()
-    .withMessage("L'email est requis")
+  email: Joi.string()
+    .required()
     .trim()
-    .isEmail()
-    .withMessage('Veuillez fournir un email valide')
-    .normalizeEmail(),
+    .email()
+    .messages({
+      'string.empty': 'L\'email est requis',
+      'string.email': 'Veuillez fournir un email valide',
+      'any.required': 'L\'email est requis'
+    }),
 
-  body('phone')
+  phone: Joi.string()
     .optional()
     .trim()
-    .matches(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
-    .withMessage('Veuillez fournir un numéro de téléphone valide'),
+    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .messages({
+      'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
+    }),
 
-  body('address.street')
+  address: Joi.object({
+    street: Joi.string().optional().trim().allow(''),
+    city: Joi.string().optional().trim().allow(''),
+    postalCode: Joi.string().optional().trim().allow(''),
+    country: Joi.string().optional().trim().allow('')
+  }).optional(),
+
+  notes: Joi.string()
     .optional()
-    .trim(),
+    .trim()
+    .allow('')
+});
 
-  body('address.city')
+// Schéma pour la mise à jour d'un client
+const updateClientSchema = Joi.object({
+  firstName: Joi.string()
     .optional()
-    .trim(),
+    .trim()
+    .min(2)
+    .max(50)
+    .messages({
+      'string.min': 'Le prénom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le prénom ne doit pas dépasser {#limit} caractères'
+    }),
 
-  body('address.postalCode')
+  lastName: Joi.string()
     .optional()
-    .trim(),
+    .trim()
+    .min(2)
+    .max(50)
+    .messages({
+      'string.min': 'Le nom doit contenir au moins {#limit} caractères',
+      'string.max': 'Le nom ne doit pas dépasser {#limit} caractères'
+    }),
 
-  body('address.country')
+  email: Joi.string()
     .optional()
-    .trim(),
+    .trim()
+    .email()
+    .messages({
+      'string.email': 'Veuillez fournir un email valide'
+    }),
 
-  body('notes')
+  phone: Joi.string()
     .optional()
-    .trim(),
+    .trim()
+    .pattern(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
+    .messages({
+      'string.pattern.base': 'Veuillez fournir un numéro de téléphone valide'
+    }),
 
-  // Middleware pour vérifier les résultats de validation
-  (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    next();
+  address: Joi.object({
+    street: Joi.string().optional().trim().allow(''),
+    city: Joi.string().optional().trim().allow(''),
+    postalCode: Joi.string().optional().trim().allow(''),
+    country: Joi.string().optional().trim().allow('')
+  }).optional(),
+
+  notes: Joi.string()
+    .optional()
+    .trim()
+    .allow('')
+});
+
+// Middleware de validation pour la création d'un client
+export const validateClientCreate = (req: Request, res: Response, next: NextFunction): void => {
+  const { error, value } = createClientSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    // Formater les erreurs pour correspondre à la structure attendue
+    const formattedErrors = error.details.map((err) => ({
+      msg: err.message,
+      param: err.path.join('.'),
+      location: 'body'
+    }));
+
+    res.status(400).json({
+      success: false,
+      errors: formattedErrors
+    });
+    return;
   }
-];
 
-// Validation pour la mise à jour d'un client
-export const validateClientUpdate = [
-  body('firstName')
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le prénom doit contenir entre 2 et 50 caractères'),
+  // Mettre à jour les données validées et nettoyées
+  req.body = value;
+  next();
+};
 
-  body('lastName')
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Le nom doit contenir entre 2 et 50 caractères'),
+// Middleware de validation pour la mise à jour d'un client
+export const validateClientUpdate = (req: Request, res: Response, next: NextFunction): void => {
+  const { error, value } = updateClientSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
 
-  body('email')
-    .optional()
-    .trim()
-    .isEmail()
-    .withMessage('Veuillez fournir un email valide')
-    .normalizeEmail(),
+  if (error) {
+    // Formater les erreurs pour correspondre à la structure attendue
+    const formattedErrors = error.details.map((err) => ({
+      msg: err.message,
+      param: err.path.join('.'),
+      location: 'body'
+    }));
 
-  body('phone')
-    .optional()
-    .trim()
-    .matches(/^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/)
-    .withMessage('Veuillez fournir un numéro de téléphone valide'),
-
-  body('address.street')
-    .optional()
-    .trim(),
-
-  body('address.city')
-    .optional()
-    .trim(),
-
-  body('address.postalCode')
-    .optional()
-    .trim(),
-
-  body('address.country')
-    .optional()
-    .trim(),
-
-  body('notes')
-    .optional()
-    .trim(),
-
-  // Middleware pour vérifier les résultats de validation
-  (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-    next();
+    res.status(400).json({
+      success: false,
+      errors: formattedErrors
+    });
+    return;
   }
-];
+
+  // Mettre à jour les données validées et nettoyées
+  req.body = value;
+  next();
+};

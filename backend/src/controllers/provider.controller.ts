@@ -1,13 +1,42 @@
-// backend/src/controllers/provider.controller.ts
+// controllers/provider.controller.ts
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import User, { IUser } from '../models/User';
-import { hash } from 'bcryptjs'; // Utiliser bcryptjs au lieu de bcrypt
+// Importer explicitement le modèle Showroom
+import Showroom from '../models/Showroom';
+import { hash } from 'bcryptjs';
 import { AuthRequest } from '../types/express';
 import { UserRole } from '../models/User';
+import { Types } from 'mongoose';
 
-// Obtenir tous les prestataires
+// Obtenir tous les prestataires avec filtrage par utilisateur
 export const getAllProviders = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // Si l'utilisateur est un vendeur, on filtre les prestataires
+    if (req.user?.role === UserRole.VENDEUR) {
+      // Récupérer les showrooms gérés par le vendeur
+      const showrooms = await Showroom.find({ managers: req.user._id });
+      const showroomIds = showrooms.map(s => s._id);
+
+      console.log(`Récupération des prestataires pour le vendeur ${req.user.id} avec ${showrooms.length} showrooms`);
+
+      // Récupérer uniquement les prestataires associés à ces showrooms
+      const providers = await User.find({
+        role: UserRole.PRESTATAIRE,
+        showrooms: { $in: showroomIds }
+      })
+      .select('-password')
+      .populate('showrooms', 'name address')
+      .sort({ lastName: 1, firstName: 1 });
+
+      res.status(200).json({
+        success: true,
+        data: providers
+      });
+      return;
+    }
+
+    // Pour les admins, on retourne tous les prestataires
     const providers = await User.find({ role: UserRole.PRESTATAIRE })
       .select('-password')
       .populate('showrooms', 'name address')
@@ -51,7 +80,11 @@ export const searchProviders = async (req: AuthRequest, res: Response): Promise<
 
     const providers = await User.find(searchQuery)
       .select('-password')
-      .populate('showrooms', 'name address')
+      .populate({
+        path: 'showrooms',
+        model: 'Showroom',
+        select: 'name address'
+      })
       .sort({ lastName: 1, firstName: 1 });
 
     res.status(200).json({
@@ -63,7 +96,7 @@ export const searchProviders = async (req: AuthRequest, res: Response): Promise<
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la recherche de prestataires',
-      details: (error as Error).message
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
     });
   }
 };
@@ -75,7 +108,11 @@ export const getProviderById = async (req: AuthRequest, res: Response): Promise<
 
     const provider = await User.findOne({ _id: id, role: UserRole.PRESTATAIRE })
       .select('-password')
-      .populate('showrooms', 'name address');
+      .populate({
+        path: 'showrooms',
+        model: 'Showroom',
+        select: 'name address'
+      });
 
     if (!provider) {
       res.status(404).json({
@@ -94,7 +131,7 @@ export const getProviderById = async (req: AuthRequest, res: Response): Promise<
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la récupération du prestataire',
-      details: (error as Error).message
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
     });
   }
 };
@@ -150,7 +187,7 @@ export const createProvider = async (req: AuthRequest, res: Response): Promise<v
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la création du prestataire',
-      details: (error as Error).message
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
     });
   }
 };
@@ -208,7 +245,7 @@ export const updateProvider = async (req: AuthRequest, res: Response): Promise<v
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la mise à jour du prestataire',
-      details: (error as Error).message
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
     });
   }
 };
@@ -216,9 +253,47 @@ export const updateProvider = async (req: AuthRequest, res: Response): Promise<v
 // Supprimer un prestataire (désactivation)
 export const deleteProvider = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+      return;
+    }
+
     const { id } = req.params;
 
-    // Désactiver le prestataire au lieu de le supprimer
+    // Si c'est un vendeur, vérifier qu'il a le droit de désactiver ce prestataire
+    /* if (req.user.role === UserRole.VENDEUR) {
+      // Vérifier que le prestataire est lié à un des showrooms du vendeur
+      const showrooms = await Showroom.find({ managers: req.user._id });
+      const showroomIds = showrooms.map(s => (s._id as Types.ObjectId).toString());
+
+      const provider = await User.findById(id);
+
+      if (!provider) {
+        res.status(404).json({
+          success: false,
+          error: 'Prestataire non trouvé'
+        });
+        return;
+      }
+
+      // Vérifier si le prestataire est associé à un des showrooms du vendeur
+      const hasAccess = provider.showrooms?.some(showroomId =>
+        showroomIds.includes(showroomId.toString())
+      );
+
+      if (!hasAccess) {
+        res.status(403).json({
+          success: false,
+          error: 'Vous n\'avez pas l\'autorisation de désactiver ce prestataire'
+        });
+        return;
+      }
+    } */
+
+    // Désactiver le prestataire
     const updatedProvider = await User.findOneAndUpdate(
       { _id: id, role: UserRole.PRESTATAIRE },
       { active: false, updatedAt: new Date() },
@@ -239,11 +314,10 @@ export const deleteProvider = async (req: AuthRequest, res: Response): Promise<v
       data: { id }
     });
   } catch (error) {
-    console.error('Erreur lors de la désactivation du prestataire:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la désactivation du prestataire',
-      details: (error as Error).message
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
     });
   }
 };

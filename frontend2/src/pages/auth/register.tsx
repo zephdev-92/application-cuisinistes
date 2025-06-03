@@ -1,95 +1,115 @@
-import React from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useAuth, UserRole } from '../../contexts/auth.context';
-import { RegisterData } from '../../types/user';
-import AuthLayout from '../../components/layout/AuthLayout';
-import { Alert } from '../../components/ui/Alert';
-import { AxiosError } from 'axios';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import AuthLayout from '@/components/layout/AuthLayout';
+import { authService } from '@/services/authService';
+import { RegisterData, UserRole, VendeurSpecialty } from '@/types/user';
 
 interface RegisterFormData extends RegisterData {
   terms?: boolean;
   confirmPassword: string;
 }
 
+// Interface pour les erreurs de l'API
 interface ApiErrorResponse {
   success: boolean;
   error?: string;
   errors?: Array<{ msg: string }>;
 }
 
-// Schéma de validation du formulaire
-const registerSchema = yup.object().shape({
-  firstName: yup
-    .string()
-    .required('Le prénom est requis')
-    .min(2, 'Le prénom doit contenir au moins 2 caractères'),
-  lastName: yup
-    .string()
-    .required('Le nom est requis')
-    .min(2, 'Le nom doit contenir au moins 2 caractères'),
-  email: yup.string().required("L'email est requis").email('Email invalide'),
-  password: yup
-    .string()
-    .required('Le mot de passe est requis')
-    .min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-  confirmPassword: yup.string().oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas').required('Veuillez confirmer votre mot de passe'),
-  role: yup.string().oneOf(Object.values(UserRole), 'Rôle invalide'),
-  phone: yup
-    .string()
-    .matches(
-      /^(\+?\d{1,4}[\s-])?(?!0+\s+,?$)\d{9,10}\s*,?$/,
-      'Numéro de téléphone invalide'
-    ),
+// Schéma de validation
+const schema = yup.object({
+  firstName: yup.string().required('Le prénom est requis'),
+  lastName: yup.string().required('Le nom est requis'),
+  email: yup.string().email('Email invalide').required('L\'email est requis'),
+  phone: yup.string().optional(),
+  role: yup.string().required('Veuillez choisir votre rôle'),
+  vendeurSpecialty: yup.string().when('role', {
+    is: UserRole.VENDEUR,
+    then: (schema) => schema.required('Veuillez choisir votre spécialité'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  password: yup.string()
+    .min(6, 'Le mot de passe doit contenir au moins 6 caractères')
+    .required('Le mot de passe est requis'),
+  confirmPassword: yup.string()
+    .oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas')
+    .required('Veuillez confirmer votre mot de passe'),
   terms: yup.boolean().oneOf([true], 'Vous devez accepter les conditions d\'utilisation'),
 });
 
 export default function Register() {
+  const router = useRouter();
+  const [apiError, setApiError] = useState<string>('');
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
-    resolver: yupResolver(registerSchema),
+    resolver: yupResolver(schema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
       role: UserRole.PRESTATAIRE,
-      phone: '',
-      terms: false,
     },
   });
-  const { register: registerUser, error } = useAuth();
+
+  const watchedRole = watch('role');
 
   const onSubmit = async (data: RegisterFormData) => {
-    try {
-      // Filtrer les champs qui ne doivent pas être envoyés au serveur
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { confirmPassword, terms, ...userData } = data;
+    setApiError('');
 
-      // Envoyer uniquement les données pertinentes
-      await registerUser(data);
-    } catch (error: unknown) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      console.error('Détails de l\'erreur d\'inscription:', {
-        message: axiosError.message,
-        statusCode: axiosError.response?.status,
-        data: axiosError.response?.data
-      });
+    try {
+      const { confirmPassword, terms, ...registerData } = data;
+      await authService.register(registerData);
+      router.push('/auth/login?message=registration-success');
+    } catch (error: any) {
+      console.error('Erreur lors de l\'inscription:', error);
+
+      if (error?.response?.data) {
+        const errorData = error.response.data as ApiErrorResponse;
+
+        if (errorData.errors && errorData.errors.length > 0) {
+          setApiError(errorData.errors.map(e => e.msg).join(', '));
+        } else if (errorData.error) {
+          setApiError(errorData.error);
+        } else {
+          setApiError('Une erreur est survenue lors de l\'inscription');
+        }
+      } else {
+        setApiError('Une erreur de connexion est survenue. Veuillez réessayer.');
+      }
     }
   };
 
   return (
-    <AuthLayout>
-      <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Inscription</h1>
-        {error && <Alert type="error" message={error} />}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <AuthLayout title="Inscription">
+      <Head>
+        <title>Inscription | Gestion Vendeurs</title>
+        <meta name="description" content="Créer un compte sur la plateforme de gestion" />
+      </Head>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Créer un compte
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Rejoignez notre plateforme de gestion
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {apiError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+              {apiError}
+            </div>
+          )}
+
           {/* Prénom */}
           <div>
             <label
@@ -197,13 +217,42 @@ export default function Register() {
                 errors.role ? 'border-red-300' : ''
               }`}
             >
-              <option value="cuisiniste">Cuisiniste</option>
-              <option value="prestataire">Prestataire</option>
+              <option value={UserRole.VENDEUR}>Vendeur</option>
+              <option value={UserRole.PRESTATAIRE}>Prestataire</option>
             </select>
             {errors.role && (
               <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
             )}
           </div>
+
+          {/* Spécialité Vendeur (conditionnel) */}
+          {watchedRole === UserRole.VENDEUR && (
+            <div>
+              <label
+                htmlFor="vendeurSpecialty"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Spécialité
+              </label>
+              <select
+                id="vendeurSpecialty"
+                {...register('vendeurSpecialty')}
+                className={`mt-1 py-1.5 pr-3 grow pl-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                  errors.vendeurSpecialty ? 'border-red-300' : ''
+                }`}
+              >
+                <option value="">Choisissez votre spécialité</option>
+                <option value={VendeurSpecialty.CUISINISTE}>Cuisiniste</option>
+                <option value={VendeurSpecialty.MOBILIER}>Mobilier</option>
+                <option value={VendeurSpecialty.ELECTROMENAGER}>Électroménager</option>
+              </select>
+              {errors.vendeurSpecialty && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.vendeurSpecialty.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Mot de passe */}
           <div>

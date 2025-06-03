@@ -15,7 +15,7 @@ const Sidebar = () => {
 
   // Navigation spécifique au rôle
   const roleSpecificNavigation = {
-    [UserRole.CUISINISTE]: [
+    [UserRole.VENDEUR]: [
       { name: 'Clients', href: '/clients' },
       { name: 'Projets', href: '/projects' },
       { name: 'Prestataires', href: '/prestataires' },
@@ -45,7 +45,7 @@ const Sidebar = () => {
         <div className="flex h-16 flex-shrink-0 items-center border-b border-gray-200 bg-white px-4">
           <Link href="/" className="flex items-center">
             <div className="mr-2 h-8 w-8 rounded-full bg-blue-600"></div>
-            <span className="text-lg font-semibold text-gray-900">Gestion Cuisinistes</span>
+            <span className="text-lg font-semibold text-gray-900">Gestion Vendeurs</span>
           </Link>
         </div>
         <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">

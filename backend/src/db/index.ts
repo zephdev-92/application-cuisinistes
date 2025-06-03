@@ -17,9 +17,14 @@ const connectToDatabase = async () => {
     console.log("Connecting to MongoDB with URL:", dbUrl);
     await mongoose.connect(dbUrl);
     console.log('MongoDB connection successful');
+
+    // Vérifier que les modèles sont déjà enregistrés
+    const registeredModels = mongoose.modelNames();
+    console.log('Models registered before DB connection:', registeredModels);
+
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    process.exit(1);
+    throw error; // Propager l'erreur pour gestion dans server.ts
   }
 };
 

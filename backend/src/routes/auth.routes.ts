@@ -6,8 +6,8 @@ import { validateRegister, validateLogin } from '../validators/auth.validator';
 const router = express.Router();
 
 // Routes d'authentification
-router.post('/register', validateRegister as any, register);
-router.post('/login', validateLogin as any, login);
+router.post('/register', validateRegister, register);
+router.post('/login', validateLogin, login);
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 
