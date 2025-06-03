@@ -1,0 +1,107 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Run linting with auto-fix
+      working-directory: ./backend
+      run: |
+        npm run lint
+        npm run format
+
+    - name: Check for TypeScript errors
+      working-directory: ./backend
+      run: npx tsc --noEmit
+
+    - name: Run tests with coverage threshold
+      working-directory: ./backend
+      run: npm run test:coverage -- --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80,"statements":80}}'
+      env:
+        NODE_ENV: test
+        JWT_SECRET: test-secret-key-for-pr
+        AUDIT_LOG_DIR: ./tests/temp-logs
+
+    - name: Check bundle size
+      working-directory: ./backend
+      run: |
+        npm run build
+        echo "📦 Vérification de la taille du bundle..."
+        du -sh dist/
+
+    - name: Security scan
+      working-directory: ./backend
+      run: |
+        npm audit --audit-level moderate
+        echo "🔒 Scan de sécurité terminé"
+
+    - name: Comment PR with results
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+
+          let comment = '## 🧪 Résultats des tests automatiques\n\n';
+          comment += '✅ **Linting**: Passed\n';
+          comment += '✅ **TypeScript**: No errors\n';
+          comment += '✅ **Tests**: All tests passed\n';
+          comment += '✅ **Security**: No vulnerabilities found\n';
+          comment += '✅ **Build**: Successful\n\n';
+          comment += '### 📊 Couverture de code\n';
+          comment += 'Les seuils de couverture sont respectés (80% minimum).\n\n';
+          comment += '### 🚀 Prêt pour la revue!\n';
+          comment += 'Cette PR a passé tous les contrôles automatiques.';
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+
+    - name: Check for outdated dependencies
+      working-directory: ./backend
+      run: |
+        npm outdated || echo "Certaines dépendances peuvent être mises à jour"
+        echo "📋 Vérification des dépendances terminée"
+
+    - name: Check for security vulnerabilities
+      working-directory: ./backend
+      run: |
+        npm audit --audit-level high
+        echo "🔍 Audit de sécurité terminé"

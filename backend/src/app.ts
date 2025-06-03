@@ -9,15 +9,19 @@ import profileRoutes from './routes/profile.routes';
 import clientRoutes from './routes/client.routes';
 import testRoutes from './routes/test.routes';
 import providerRoutes from './routes/provider.routes';
+import adminRoutes from './routes/admin.routes';
 
 // Middleware d'erreurs
-import { globalErrorHandler, notFound } from './middleware/errorHandler';
+import { globalErrorHandler, notFound, requestTimer } from './middleware/errorHandler';
 
 // Création de l'application Express
 const app = express();
 
 // Middleware de sécurité
 app.use(helmet());
+
+// Middleware pour mesurer le temps de traitement des requêtes
+app.use(requestTimer);
 
 // Middleware pour le CORS
 app.use(cors({
@@ -41,6 +45,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/providers', providerRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Route de santé pour vérifier que l'API fonctionne
 app.get('/health', (req, res) => {

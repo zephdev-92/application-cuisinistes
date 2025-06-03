@@ -1,38 +1,55 @@
 # backend/Dockerfile.prod
-FROM node:18-alpine AS builder
+# Stage 1: Build
+FROM node:20-alpine AS builder
 
-# Création du répertoire de travail
 WORKDIR /app
 
-# Copie des fichiers de dépendances
-COPY package.json package-lock.json* tsconfig.json ./
+# Copier les fichiers de dépendances
+COPY package*.json ./
+COPY tsconfig.json ./
 
-# Installation des dépendances
-RUN npm ci
+# Installer les dépendances
+RUN npm ci --only=production
 
-# Copie du reste du code source
-COPY . .
+# Copier le code source
+COPY src/ ./src/
 
-# Construction du projet TypeScript
+# Build de l'application
 RUN npm run build
 
-# Étape de production avec une image minimale
-FROM node:18-alpine
+# Stage 2: Production
+FROM node:20-alpine AS production
 
-# Création du répertoire de travail
+# Créer un utilisateur non-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
 WORKDIR /app
 
-# Copie des fichiers de dépendances
-COPY package.json package-lock.json* ./
+# Copier les dépendances de production
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Installation des dépendances de production uniquement
-RUN npm ci --production
-
-# Copie des fichiers de build depuis l'étape précédente
+# Copier le build depuis le stage précédent
 COPY --from=builder /app/dist ./dist
 
-# Exposition du port utilisé par l'application
+# Créer les répertoires nécessaires
+RUN mkdir -p logs/audit uploads temp
+RUN chown -R nodejs:nodejs /app
+
+# Variables d'environnement par défaut
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Passer à l'utilisateur non-root
+USER nodejs
+
+# Exposer le port
 EXPOSE 5000
 
-# Commande de démarrage en mode production
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node dist/healthcheck.js || exit 1
+
+# Commande de démarrage
 CMD ["node", "dist/server.js"]
