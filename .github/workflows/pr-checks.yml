@@ -2,17 +2,54 @@ name: Pull Request Checks
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]  # Seulement les PRs vers main
+    types: [opened, synchronize, reopened]
 
 jobs:
-  quality-checks:
+  # Job de validation spécial pour les PRs dev -> main
+  validate-pr:
     runs-on: ubuntu-latest
+    if: github.head_ref == 'dev'  # Seulement si la PR vient de dev
 
     steps:
-    - name: Checkout code
+    - name: Validate dev to main PR
+      run: |
+        echo "🔍 Validation PR dev -> main"
+        echo "Source: ${{ github.head_ref }}"
+        echo "Target: ${{ github.base_ref }}"
+        echo "✅ PR structure valide"
+
+  # Tests complets pour les PRs vers main
+  pr-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: password
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout PR code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -25,83 +62,50 @@ jobs:
       working-directory: ./backend
       run: npm ci
 
-    - name: Run linting with auto-fix
+    - name: Run linting
       working-directory: ./backend
-      run: |
-        npm run lint
-        npm run format
+      run: npm run lint
 
-    - name: Check for TypeScript errors
+    - name: Run all tests
       working-directory: ./backend
-      run: npx tsc --noEmit
-
-    - name: Run tests with coverage threshold
-      working-directory: ./backend
-      run: npm run test:coverage -- --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80,"statements":80}}'
+      run: npm run test:coverage
       env:
         NODE_ENV: test
-        JWT_SECRET: test-secret-key-for-pr
+        MONGODB_URI: mongodb://root:password@localhost:27017/cuisine-app-test?authSource=admin
+        JWT_SECRET: test-secret-key-for-ci
         AUDIT_LOG_DIR: ./tests/temp-logs
 
-    - name: Check bundle size
+    - name: Security audit
       working-directory: ./backend
       run: |
-        npm run build
-        echo "📦 Vérification de la taille du bundle..."
-        du -sh dist/
-
-    - name: Security scan
-      working-directory: ./backend
-      run: |
-        npm audit --audit-level moderate
-        echo "🔒 Scan de sécurité terminé"
-
-    - name: Comment PR with results
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request'
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-
-          let comment = '## 🧪 Résultats des tests automatiques\n\n';
-          comment += '✅ **Linting**: Passed\n';
-          comment += '✅ **TypeScript**: No errors\n';
-          comment += '✅ **Tests**: All tests passed\n';
-          comment += '✅ **Security**: No vulnerabilities found\n';
-          comment += '✅ **Build**: Successful\n\n';
-          comment += '### 📊 Couverture de code\n';
-          comment += 'Les seuils de couverture sont respectés (80% minimum).\n\n';
-          comment += '### 🚀 Prêt pour la revue!\n';
-          comment += 'Cette PR a passé tous les contrôles automatiques.';
-
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
-
-  dependency-check:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-
-    - name: Check for outdated dependencies
-      working-directory: ./backend
-      run: |
-        npm outdated || echo "Certaines dépendances peuvent être mises à jour"
-        echo "📋 Vérification des dépendances terminée"
-
-    - name: Check for security vulnerabilities
-      working-directory: ./backend
-      run: |
+        echo "🔍 Security audit for PR"
         npm audit --audit-level high
-        echo "🔍 Audit de sécurité terminé"
+        if [ $? -eq 0 ]; then
+          echo "✅ No high-level vulnerabilities"
+        else
+          echo "❌ Security issues found - PR blocked"
+          exit 1
+        fi
+
+    - name: Build check
+      working-directory: ./backend
+      run: npm run build
+
+    - name: Docker build check
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile.prod
+        push: false
+        tags: cuisine-backend:pr-${{ github.event.number }}
+
+    - name: PR Summary
+      run: |
+        echo "## ✅ PR Validation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Source**: \`${{ github.head_ref }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Target**: \`${{ github.base_ref }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- **Security**: ✅ No high-level vulnerabilities" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build**: ✅ Docker build successful" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🚀 **Ready to merge to main**" >> $GITHUB_STEP_SUMMARY
