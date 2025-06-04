@@ -50,6 +50,75 @@ jobs:
     steps:
     - name: Checkout PR code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Nécessaire pour valider tous les commits
+
+    - name: Validate Git conventions
+      run: |
+        echo "🔍 Validation des conventions Git"
+
+        # Valider le nom de branche
+        branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+        echo "📍 Branche: $branch"
+
+        if [[ $branch != "main" ]] && [[ $branch != "dev" ]]; then
+          if [[ ! $branch =~ ^(feature|fix|hotfix|refactor|docs|test|chore)/.+ ]]; then
+            echo "❌ Nom de branche invalide: $branch"
+            echo "Format requis: type/description (ex: feature/user-authentication)"
+            exit 1
+          fi
+          echo "✅ Nom de branche valide"
+        fi
+
+        # Valider tous les commits de la PR
+        echo "📝 Validation des messages de commit..."
+        commit_count=0
+        invalid_commits=0
+
+        while IFS= read -r commit_line; do
+          if [[ -n "$commit_line" ]]; then
+            commit_count=$((commit_count + 1))
+            commit_hash=$(echo "$commit_line" | cut -d' ' -f1)
+            commit_msg=$(echo "$commit_line" | cut -d' ' -f2-)
+
+            echo "  Commit $commit_count: $commit_msg"
+
+            # Ignorer les commits de merge automatiques
+            if [[ $commit_msg =~ ^Merge.* ]] || [[ $commit_msg =~ ^Revert.* ]]; then
+              echo "    ↳ Commit de merge/revert ignoré"
+              continue
+            fi
+
+            # Valider le format Conventional Commits
+            if [[ ! $commit_msg =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,50}$ ]]; then
+              echo "    ❌ Format invalide"
+              invalid_commits=$((invalid_commits + 1))
+            else
+              echo "    ✅ Format valide"
+            fi
+          fi
+        done < <(git log --oneline origin/main..HEAD)
+
+        echo ""
+        echo "📊 Résultats:"
+        echo "  • Commits analysés: $commit_count"
+        echo "  • Commits invalides: $invalid_commits"
+
+        if [[ $invalid_commits -gt 0 ]]; then
+          echo ""
+          echo "❌ $invalid_commits commit(s) ne respectent pas les conventions"
+          echo ""
+          echo "Format requis: type(scope): description"
+          echo "Types autorisés: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+          echo ""
+          echo "Exemples valides:"
+          echo "  feat(auth): add user authentication"
+          echo "  fix(api): resolve validation error"
+          echo "  docs(readme): update installation guide"
+          exit 1
+        fi
+
+        echo "✅ Toutes les conventions Git sont respectées"
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
