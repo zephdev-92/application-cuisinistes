@@ -21,6 +21,26 @@ dist/
 .next/
 out/
 
+# Sécurité - Fichiers contenant des secrets
+*secrets*
+*passwords*
+*keys*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Fichiers de configuration avec secrets
+config/secrets.json
+config/production.json
+secrets.yaml
+secrets.yml
+
+# Scripts de génération temporaires
+generate-secrets-output.txt
+secrets-backup.txt
+
 # Divers
 .DS_Store
 Thumbs.db
