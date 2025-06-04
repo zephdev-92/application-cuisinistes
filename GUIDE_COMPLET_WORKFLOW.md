@@ -113,12 +113,14 @@ on:
 - 🐳 Validation build Docker
 - 📊 Rapport détaillé de la PR
 
-### **3. Workflow Docker Hub : `docker-hub.yml`**
+### **3. Workflow Docker Hub : `docker-hub.yml`** ⚠️ **SUPPRIMÉ**
 
-```yaml
+~~```yaml
 # Publication d'images Docker (optionnel)
 # Requiert DOCKER_USERNAME et DOCKER_PASSWORD
-```
+```~~
+
+**Note :** Ce workflow a été supprimé car non utilisé actuellement. Pour réactiver la publication Docker Hub, consultez la section "Prochaines étapes".
 
 ---
 
