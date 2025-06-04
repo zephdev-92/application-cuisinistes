@@ -89,8 +89,18 @@ jobs:
               continue
             fi
 
-            # Valider le format Conventional Commits
-            if [[ ! $commit_msg =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,50}$ ]]; then
+            # Valider le format Conventional Commits - syntaxe simplifiée
+            commit_valid=false
+
+            # Vérifier le type au début
+            if [[ $commit_msg =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert) ]]; then
+              # Vérifier le format complet avec ou sans scope
+              if [[ $commit_msg =~ ^[a-z]+(\([^)]+\))?: .+ ]] && [[ ${#commit_msg} -le 50 ]]; then
+                commit_valid=true
+              fi
+            fi
+
+            if [[ $commit_valid == false ]]; then
               echo "    ❌ Format invalide"
               invalid_commits=$((invalid_commits + 1))
             else
