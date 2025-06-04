@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer TOUTES les dépendances (y compris devDependencies pour le build)
+RUN npm ci
 
 # Copier le code source
 COPY src/ ./src/
@@ -26,7 +26,7 @@ RUN adduser -S nodejs -u 1001
 
 WORKDIR /app
 
-# Copier les dépendances de production
+# Copier les dépendances de production seulement
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 

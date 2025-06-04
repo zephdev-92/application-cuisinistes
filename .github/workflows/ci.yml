@@ -154,21 +154,22 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+    # Temporarily disable Docker Hub push until secrets are configured
+    # - name: Login to Docker Hub
+    #   uses: docker/login-action@v3
+    #   with:
+    #     username: ${{ secrets.DOCKER_USERNAME }}
+    #     password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push backend image
+    - name: Build backend image (without push)
       uses: docker/build-push-action@v5
       with:
         context: ./backend
         file: ./backend/Dockerfile.prod
-        push: true
+        push: false  # Disable push until Docker Hub secrets are configured
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/cuisine-backend:latest
-          ${{ secrets.DOCKER_USERNAME }}/cuisine-backend:${{ github.sha }}
+          cuisine-backend:latest
+          cuisine-backend:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -185,7 +186,8 @@ jobs:
     - name: Deploy to production
       run: |
         echo "🚀 Déploiement en production"
-        echo "Image: ${{ secrets.DOCKER_USERNAME }}/cuisine-backend:${{ github.sha }}"
+        echo "Image: cuisine-backend:${{ github.sha }}"
+        echo "⚠️  Docker Hub push disabled - configure DOCKER_USERNAME and DOCKER_PASSWORD secrets to enable"
         # Ici vous pouvez ajouter vos scripts de déploiement
         # Par exemple: mise à jour des services Docker, Kubernetes, etc.
 
