@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, dev ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, dev ]
 
 jobs:
   test:
@@ -124,6 +124,7 @@ jobs:
       run: |
         # Check for high-level vulnerabilities using npm audit exit code
         echo "🔍 Checking for high-level vulnerabilities..."
+        echo "📍 Branch: ${{ github.ref_name }}"
 
         # Run npm audit and capture both output and exit code
         set +e  # Don't exit on error
@@ -145,7 +146,6 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: [test, security]
-    if: github.ref == 'refs/heads/main'
 
     steps:
     - name: Checkout code
@@ -154,29 +154,34 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    # Temporarily disable Docker Hub push until secrets are configured
-    # - name: Login to Docker Hub
-    #   uses: docker/login-action@v3
-    #   with:
-    #     username: ${{ secrets.DOCKER_USERNAME }}
-    #     password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Build backend image (without push)
+    - name: Build backend image
       uses: docker/build-push-action@v5
       with:
         context: ./backend
         file: ./backend/Dockerfile.prod
-        push: false  # Disable push until Docker Hub secrets are configured
+        push: false  # Ne jamais pousser depuis dev, seulement construire pour tester
         tags: |
-          cuisine-backend:latest
+          cuisine-backend:${{ github.ref_name }}
           cuisine-backend:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Notify build status
+      run: |
+        if [ "${{ github.ref_name }}" = "main" ]; then
+          echo "🚀 Image construite pour PRODUCTION (main)"
+          echo "⚠️  Docker Hub push disabled - configure DOCKER_USERNAME and DOCKER_PASSWORD secrets to enable"
+        elif [ "${{ github.ref_name }}" = "dev" ]; then
+          echo "🧪 Image construite pour DÉVELOPPEMENT (dev)"
+          echo "✅ Tests Docker build réussis - prêt pour merge vers main"
+        else
+          echo "🔧 Image construite pour la branche: ${{ github.ref_name }}"
+        fi
+
   deploy:
     runs-on: ubuntu-latest
     needs: docker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'  # SEULEMENT sur main
     environment: production
 
     steps:
@@ -185,14 +190,15 @@ jobs:
 
     - name: Deploy to production
       run: |
-        echo "🚀 Déploiement en production"
+        echo "🚀 Déploiement en PRODUCTION depuis main"
         echo "Image: cuisine-backend:${{ github.sha }}"
         echo "⚠️  Docker Hub push disabled - configure DOCKER_USERNAME and DOCKER_PASSWORD secrets to enable"
-        # Ici vous pouvez ajouter vos scripts de déploiement
+        # Ici vous pouvez ajouter vos scripts de déploiement réels
         # Par exemple: mise à jour des services Docker, Kubernetes, etc.
 
     - name: Notify deployment
       run: |
         echo "✅ Déploiement terminé avec succès"
         echo "Version: ${{ github.sha }}"
+        echo "Branche: ${{ github.ref_name }}"
         echo "URL: https://your-production-url.com"
