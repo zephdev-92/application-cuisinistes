@@ -122,15 +122,24 @@ jobs:
     - name: Check for vulnerabilities
       working-directory: ./backend
       run: |
-        # Check for high-level vulnerabilities and fail if any are found
-        high_vulns=$(npm audit --parseable --audit-level high | wc -l)
-        if [ "$high_vulns" -gt 0 ]; then
-          echo "❌ Found $high_vulns high-level vulnerabilities"
-          npm audit --audit-level high
-          exit 1
-        else
+        # Check for high-level vulnerabilities using npm audit exit code
+        echo "🔍 Checking for high-level vulnerabilities..."
+
+        # Run npm audit and capture both output and exit code
+        set +e  # Don't exit on error
+        audit_output=$(npm audit --audit-level high 2>&1)
+        audit_exit_code=$?
+        set -e  # Re-enable exit on error
+
+        echo "$audit_output"
+
+        # npm audit exits with code 0 if no vulnerabilities at the specified level
+        if [ $audit_exit_code -eq 0 ]; then
           echo "✅ No high-level vulnerabilities found"
           exit 0
+        else
+          echo "❌ High-level vulnerabilities detected (exit code: $audit_exit_code)"
+          exit 1
         fi
 
   docker:
